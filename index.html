@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Subtitle Translator Pro v2.0.0 — Gemini Batch & Style Studio</title>
+<title>AI Subtitle Translator Pro v2.0.3 — Gemini Batch & Style Studio</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -44,7 +44,7 @@ body{font-family:'Noto Sans Thai','Inter',sans-serif;}
 <base target="_blank">
 </head>
 <body class="bg-gradient-to-br from-slate-100 via-violet-50 to-fuchsia-100 min-h-screen">
-<!-- AI Subtitle Translator Pro v2.0.0 | Codename: "Gemini Batch & Style Studio" -->
+<!-- AI Subtitle Translator Pro v2.0.3 | Codename: "Gemini Batch & Style Studio" -->
 
 <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
@@ -57,7 +57,7 @@ body{font-family:'Noto Sans Thai','Inter',sans-serif;}
   </div>
   <h1 class="text-3xl md:text-4xl font-bold text-slate-800 mb-1">AI Subtitle Translator Pro</h1>
   <div class="flex justify-center items-center gap-2 mb-2">
-    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-slate-800 text-white">v2.0.0</span>
+    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-slate-800 text-white">v2.0.3</span>
     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-violet-100 text-violet-700">"Gemini Batch & Style Studio"</span>
   </div>
   <p class="text-slate-500">แปลซับไตเติ้ลอัจฉริยะด้วย Gemini AI พร้อมปรับแต่ง Style ให้ลื่นไหล</p>
@@ -147,10 +147,15 @@ body{font-family:'Noto Sans Thai','Inter',sans-serif;}
         <div>
           <label class="block text-sm font-medium text-slate-600 mb-1">โมเดล</label>
           <select id="geminiModel" class="w-full rounded-lg border-slate-200 border p-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none bg-white">
-            <option value="gemini-2.0-flash">Gemini 2.0 Flash (เร็ว/ประหยัด)</option>
-            <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash (สมดุล)</option>
-            <option value="gemini-2.5-pro">Gemini 2.5 Pro (คุณภาพสูง)</option>
+            <option value="gemini-flash-latest" selected>Gemini Flash Latest (แนะนำ)</option>
+            <option value="gemini-3.6-flash">Gemini 3.6 Flash (ล่าสุด)</option>
+            <option value="gemini-pro-latest">Gemini Pro Latest (คุณภาพสูง)</option>
           </select>
+          <p class="text-xs text-amber-600 mt-1"><i class="fas fa-info-circle"></i> สำหรับผู้ใช้ใหม่ ให้ใช้ "Flash Latest" หรือ "3.6 Flash" โมเดลอื่นอาจถูกบล็อก</p>
+          <button onclick="testGeminiKey()" class="mt-2 w-full py-2 rounded-lg bg-violet-100 text-violet-700 text-sm font-medium hover:bg-violet-200 transition">
+            <i class="fas fa-vial"></i> ตรวจสอบ Key & โมเดล
+          </button>
+          <div id="testResult" class="mt-2 text-xs font-mono hidden"></div>
         </div>
         <div>
           <label class="block text-sm font-medium text-slate-600 mb-1">Batch Size</label>
@@ -405,7 +410,7 @@ body{font-family:'Noto Sans Thai','Inter',sans-serif;}
 </div>
 
 <footer class="text-center mt-8 pb-6 text-slate-400 text-sm">
-  <p>⚡ AI Subtitle Translator Pro v2.0.0 "Gemini Batch & Style Studio" • รองรับ SRT, VTT, ASS/SSA • Batch Translation • Style Studio</p>
+  <p>⚡ AI Subtitle Translator Pro v2.0.3 "Gemini Batch & Style Studio" • รองรับ SRT, VTT, ASS/SSA • Batch Translation • Style Studio</p>
 </footer>
 </div>
 
@@ -639,7 +644,7 @@ function parseASS(content) {
 
 // ==================== RENDER ====================
 function renderPreview(container, entries, isTranslated) {
-  if (!entries.length) return;
+  if (!container || !entries || !entries.length) return;
   container.innerHTML = '';
   entries.forEach(entry => {
     const div = document.createElement('div');
@@ -660,6 +665,7 @@ function renderPreview(container, entries, isTranslated) {
 
 function renderSideBySide(orig, trans) {
   const container = document.getElementById('editorSide');
+  if (!container) return;
   container.innerHTML = '';
   const maxLen = Math.max(orig.length, trans.length);
   for (let i = 0; i < maxLen; i++) {
@@ -752,31 +758,142 @@ async function callGemini(prompt, apiKey, model) {
     contents: [{ parts: [{ text: prompt }] }],
     generationConfig: { temperature: 0.3, maxOutputTokens: 8192 }
   };
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    signal: abortController?.signal
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    const msg = err.error?.message || `HTTP ${res.status}`;
-    if (msg.includes('API key not valid')) throw new Error('Gemini API Key ไม่ถูกต้อง');
-    if (msg.includes('quota') || msg.includes('Quota')) throw new Error('Gemini Quota หมดแล้ว กรุณารอหรือตรวจสอบแผน');
-    if (msg.includes('model') && msg.includes('not found')) throw new Error(`โมเดล ${model} ไม่พร้อมใช้งาน ลองเปลี่ยนโมเดล`);
-    throw new Error(`Gemini: ${msg}`);
+
+  let res;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: abortController?.signal
+    });
+  } catch (networkErr) {
+    console.error('Network/CORS Error:', networkErr);
+    throw new Error(`เบราว์เซอร์บล็อกการเชื่อมต่อ (CORS/Network) — กรุณา host ไฟล์นี้บนเว็บเซิร์ฟเวอร์ หรือใช้ Extension แก้ CORS`);
   }
+
+  if (!res.ok) {
+    let errText = '';
+    try {
+      const errJson = await res.json();
+      errText = JSON.stringify(errJson, null, 2);
+    } catch {
+      errText = await res.text();
+    }
+
+    console.error('Gemini API Error Response:', errText);
+
+    if (res.status === 400 && errText.includes('API key not valid')) {
+      throw new Error(`Gemini API Key ไม่ถูกต้อง (HTTP 400) — ตรวจสอบที่ https://aistudio.google.com/app/apikey`);
+    }
+    if (res.status === 429 || errText.includes('quota') || errText.includes('Quota') || errText.includes('RESOURCE_EXHAUSTED')) {
+      throw new Error(`Gemini Quota หมด (HTTP 429) — ลองสร้างโปรเจคใหม่ + API Key ใหม่ หรือรอ 24 ชม.`);
+    }
+    if (res.status === 404 || errText.includes('not found') || errText.includes('models')) {
+      throw new Error(`โมเดล "${model}" ไม่พบ (HTTP 404) — ลองกด "ตรวจสอบ Key & โมเดล" เพื่อหาโมเดลที่ใช้ได้`);
+    }
+    if (res.status === 403) {
+      throw new Error(`การเข้าถึงถูกปฏิเสธ (HTTP 403) — ต้องเปิดใช้งาน Generative Language API ใน Google Cloud Console`);
+    }
+    throw new Error(`Gemini API Error (HTTP ${res.status}): ${errText.substring(0, 200)}`);
+  }
+
   const data = await res.json();
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  // Estimate tokens (rough: ~4 chars per token)
   const inputTokens = Math.ceil(prompt.length / 4);
   const outputTokens = Math.ceil(text.length / 4);
   recordQuota(1, inputTokens + outputTokens, 0);
   return text;
 }
 
+async function testGeminiKey() {
+  const apiKey = document.getElementById('geminiApiKey').value.trim();
+  const resultDiv = document.getElementById('testResult');
+  if (!apiKey) { showToast('ใส่ API Key ก่อน', 'warning'); return; }
+
+  resultDiv.classList.remove('hidden');
+  resultDiv.innerHTML = '<span class="text-violet-600"><i class="fas fa-spinner fa-spin"></i> กำลังตรวจสอบ...</span>';
+
+  // First check if we're running from file:// (CORS issue)
+  if (window.location.protocol === 'file:') {
+    resultDiv.innerHTML = `<span class="text-amber-600"><i class="fas fa-exclamation-triangle"></i> <strong>เปิดจาก file:// อยู่</strong> — เบราว์เซอร์อาจบล็อกการเชื่อมต่อ API<br>แนะนำ: เปิดผ่าน <strong>Live Server</strong> (VS Code) หรืออัปโหลดขึ้น <strong>GitHub Pages</strong><br>หรือกด "เริ่มแปล" ไปเลยก็ได้ (ถ้า API Key ถูกต้องจะทำงาน)</span>`;
+    showToast('เปิดจาก file:// CORS อาจบล็อก แนะนำใช้ Live Server', 'warning');
+    return;
+  }
+
+  const models = ['gemini-flash-latest', 'gemini-3.6-flash', 'gemini-pro-latest'];
+  let found = null;
+  let lastError = '';
+
+  for (const m of models) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: 'Hi' }] }] })
+      });
+      if (res.ok) {
+        found = m;
+        break;
+      } else {
+        const err = await res.json().catch(() => ({}));
+        lastError = err.error?.message || `HTTP ${res.status}`;
+      }
+    } catch (e) {
+      lastError = e.message;
+      // If it's a TypeError (CORS/Network), note it
+      if (e instanceof TypeError) {
+        resultDiv.innerHTML = `<span class="text-amber-600"><i class="fas fa-exclamation-triangle"></i> <strong>CORS / Network Error</strong><br>เบราว์เซอร์บล็อกการเชื่อมต่อ — แนะนำเปิดผ่าน Live Server หรือกด "เริ่มแปล" ไปเลย</span>`;
+        showToast('CORS บล็อกการเชื่อมต่อ แนะนำใช้ Live Server', 'warning');
+        return;
+      }
+    }
+  }
+
+  if (found) {
+    resultDiv.innerHTML = `<span class="text-green-600"><i class="fas fa-check-circle"></i> พบโมเดลที่ใช้ได้: <strong>${found}</strong> — ระบบจะเลือกให้อัตโนมัติ</span>`;
+    document.getElementById('geminiModel').value = found;
+    showToast(`พบโมเดลที่ใช้ได้: ${found}`, 'success');
+  } else {
+    resultDiv.innerHTML = `<span class="text-red-600"><i class="fas fa-times-circle"></i> ไม่พบโมเดลที่ใช้ได้<br><small>สาเหตุล่าสุด: ${lastError.substring(0, 100)}</small><br>ลอง: 1) ตรวจสอบ API Key 2) เปิด Gemini API ใน Google Cloud Console 3) รอ 1-2 นาทีหลังเปิด API</span>`;
+    showToast('ไม่พบโมเดลที่ใช้ได้ ตรวจสอบ Key และ API', 'error');
+  }
+}
+
 // Batch translate with Gemini
 async function translateBatchGemini(batch, sourceLang, targetLang, stylePrompt, apiKey, model) {
+  // Auto-detect working model if current one fails
+  let workingModel = model;
+  const fallbackModels = ['gemini-flash-latest', 'gemini-3.6-flash', 'gemini-pro-latest'];
+
+  // Test current model first
+  try {
+    const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const testRes = await fetch(testUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: 'test' }] }] }),
+      signal: abortController?.signal
+    });
+    if (!testRes.ok && testRes.status === 404) {
+      // Try fallbacks
+      for (const fm of fallbackModels) {
+        if (fm === model) continue;
+        try {
+          const fUrl = `https://generativelanguage.googleapis.com/v1beta/models/${fm}:generateContent?key=${apiKey}`;
+          const fRes = await fetch(fUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: 'test' }] }] }),
+            signal: abortController?.signal
+          });
+          if (fRes.ok) { workingModel = fm; log(`🔄 เปลี่ยนโมเดลเป็น ${fm}`); break; }
+        } catch(e) {}
+      }
+    }
+  } catch(e) {}
+
   const sl = sourceLang === 'auto' ? 'auto-detect' : sourceLang;
   const jsonArray = batch.map((b, i) => ({ id: i + 1, text: b.text }));
   const prompt = `You are a professional subtitle translator. Translate the following subtitles from ${sl} to ${targetLang}.
@@ -816,6 +933,35 @@ OUTPUT (JSON array only):`;
 
 // Style adjustment with Gemini (post-translation)
 async function styleAdjustBatchGemini(batch, targetLang, stylePrompt, apiKey, model) {
+  // Auto-detect working model if current one fails
+  let workingModel = model;
+  const fallbackModels = ['gemini-flash-latest', 'gemini-3.6-flash', 'gemini-pro-latest'];
+
+  try {
+    const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const testRes = await fetch(testUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: 'test' }] }] }),
+      signal: abortController?.signal
+    });
+    if (!testRes.ok && testRes.status === 404) {
+      for (const fm of fallbackModels) {
+        if (fm === model) continue;
+        try {
+          const fUrl = `https://generativelanguage.googleapis.com/v1beta/models/${fm}:generateContent?key=${apiKey}`;
+          const fRes = await fetch(fUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: 'test' }] }] }),
+            signal: abortController?.signal
+          });
+          if (fRes.ok) { workingModel = fm; log(`🔄 เปลี่ยนโมเดลเป็น ${fm}`); break; }
+        } catch(e) {}
+      }
+    }
+  } catch(e) {}
+
   const jsonArray = batch.map((b, i) => ({ id: i + 1, text: b.text }));
   const prompt = `You are a subtitle style editor. Improve the following ${targetLang} subtitles to make them more natural and fluent according to the style below.
 
@@ -1005,6 +1151,7 @@ async function translateWithGemini(total, sourceLang, targetLang, stylePrompt, k
       recordQuota(0, 0, 1); // record batch
     } catch (err) {
       log(`❌ Batch ${Math.floor(i/batchSize)+1} ล้มเหลว: ${err.message}`);
+      console.error('Full error:', err);
       // Fallback: try smaller batches
       if (batch.length > 1) {
         log('🔄 ลองแบ่ง batch เล็กลง...');
@@ -1137,21 +1284,40 @@ async function translateBatchDeepL(texts, source, target, apiKey) {
 
 function updateProgress(done, total, detail) {
   const pct = Math.round((done / total) * 100);
-  progressBar.style.width = pct + '%';
-  progressPercent.textContent = pct + '%';
-  progressText.textContent = detail || `แปลแล้ว ${done}/${total}`;
-  progressDetail.textContent = `เวลา: ${((Date.now() - startTime)/1000).toFixed(1)}s | แปลแล้ว: ${done} | เหลือ: ${total - done}`;
-  document.getElementById('statDone').textContent = done;
+  if (progressBar) progressBar.style.width = pct + '%';
+  if (progressPercent) progressPercent.textContent = pct + '%';
+  if (progressText) progressText.textContent = detail || `แปลแล้ว ${done}/${total}`;
+  if (progressDetail) progressDetail.textContent = `เวลา: ${((Date.now() - startTime)/1000).toFixed(1)}s | แปลแล้ว: ${done} | เหลือ: ${total - done}`;
+  const statDone = document.getElementById('statDone');
+  if (statDone) statDone.textContent = done;
 }
 
 function finishTranslation(completed, failed, total) {
   isTranslating = false;
   translateBtn.disabled = false;
   translateBtn.innerHTML = '<i class="fas fa-language"></i><span>เริ่มแปล</span>';
-  exportBtn.disabled = false;
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-  document.getElementById('statTime').textContent = elapsed + 's';
-  statsBar.classList.remove('hidden');
+  const statTime = document.getElementById('statTime');
+  if (statTime) statTime.textContent = elapsed + 's';
+  if (statsBar) statsBar.classList.remove('hidden');
+
+  // If nothing was translated at all
+  if (completed === 0) {
+    if (progressText) progressText.textContent = `❌ แปลไม่สำเร็จเลย (${failed}/${total} รายการ)`;
+    if (progressBar) progressBar.style.width = '0%';
+    if (progressPercent) progressPercent.textContent = '0%';
+    log(`❌ แปลไม่สำเร็จเลย ${failed}/${total} รายการ`);
+    showToast(`แปลไม่สำเร็จเลย กรุณาตรวจสอบ API Key และ Quota`, 'error');
+    // Do NOT show results, do NOT enable export
+    exportBtn.disabled = true;
+    editorPanel.classList.add('hidden');
+    translatedCount.classList.add('hidden');
+    styleBadge.classList.add('hidden');
+    return;
+  }
+
+  // Partial success
+  exportBtn.disabled = false;
   editorPanel.classList.remove('hidden');
 
   // Show style adjust button for non-Gemini providers if we have results
@@ -1167,20 +1333,20 @@ function finishTranslation(completed, failed, total) {
   }
 
   if (failed === 0) {
-    progressText.textContent = '✅ แปลเสร็จสมบูรณ์!';
+    if (progressText) progressText.textContent = '✅ แปลเสร็จสมบูรณ์!';
     log('✅ แปลเสร็จสมบูรณ์');
     showToast('แปลเสร็จสมบูรณ์!', 'success');
   } else {
-    progressText.textContent = `⚠️ แปลเสร็จแล้ว (ล้มเหลว ${failed} รายการ)`;
-    log(`⚠️ ล้มเหลว ${failed} รายการ`);
-    showToast(`แปลเสร็จแล้ว แต่ล้มเหลว ${failed} รายการ`, 'warning');
+    if (progressText) progressText.textContent = `⚠️ แปลเสร็จแล้ว (สำเร็จ ${completed} / ล้มเหลว ${failed})`;
+    log(`⚠️ สำเร็จ ${completed} / ล้มเหลว ${failed}`);
+    showToast(`แปลเสร็จแล้ว สำเร็จ ${completed} ล้มเหลว ${failed}`, 'warning');
   }
 
   renderPreview(translatedPreview, translatedEntries, true);
   renderSideBySide(currentEntries, translatedEntries);
-  translatedCount.textContent = `${translatedEntries.length} บรรทัด`;
+  translatedCount.textContent = `${completed} บรรทัด`;
   translatedCount.classList.remove('hidden');
-  if (selectedProvider === 'gemini') {
+  if (selectedProvider === 'gemini' && completed > 0) {
     styleBadge.classList.remove('hidden');
     styleBadge.innerHTML = '<i class="fas fa-sparkles"></i> Styled by Gemini';
   }
