@@ -41,6 +41,7 @@ body{font-family:'Noto Sans Thai','Inter',sans-serif;}
 .quota-ring .progress{stroke:#8b5cf6;stroke-linecap:round;transition:stroke-dashoffset .5s ease}
 .quota-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:1.1rem;font-weight:700;color:#1e293b}
 </style>
+<base target="_blank">
 </head>
 <body class="bg-gradient-to-br from-slate-100 via-violet-50 to-fuchsia-100 min-h-screen">
 <!-- AI Subtitle Translator Pro v2.0.0 | Codename: "Gemini Batch & Style Studio" -->
@@ -491,6 +492,7 @@ function selectProvider(provider) {
     geminiSettings.classList.remove('hidden');
     otherProviderSettings.classList.add('hidden');
     styleAdjustBtn.classList.add('hidden');
+    // If we already have translated results, hide the style adjust since we're switching to Gemini
   } else {
     geminiSettings.classList.add('hidden');
     otherProviderSettings.classList.remove('hidden');
@@ -952,11 +954,14 @@ async function startTranslation() {
   let completed = 0, failed = 0;
 
   try {
+    let result;
     if (provider === 'gemini') {
-      await translateWithGemini(total, sourceLang, targetLang, stylePrompt, keepFormat, completed, failed);
+      result = await translateWithGemini(total, sourceLang, targetLang, stylePrompt, keepFormat);
     } else {
-      await translateWithOther(provider, total, sourceLang, targetLang, keepFormat, completed, failed);
+      result = await translateWithOther(provider, total, sourceLang, targetLang, keepFormat);
     }
+    completed = result.completed;
+    failed = result.failed;
   } catch (err) {
     log(`❌ ข้อผิดพลาด: ${err.message}`);
     showToast(err.message, 'error');
@@ -965,7 +970,7 @@ async function startTranslation() {
   finishTranslation(completed, failed, total);
 }
 
-async function translateWithGemini(total, sourceLang, targetLang, stylePrompt, keepFormat, completedRef, failedRef) {
+async function translateWithGemini(total, sourceLang, targetLang, stylePrompt, keepFormat) {
   const apiKey = getGeminiApiKey();
   const model = getGeminiModel();
   const batchSize = parseInt(document.getElementById('batchSize').value) || 10;
@@ -1033,7 +1038,7 @@ async function translateWithGemini(total, sourceLang, targetLang, stylePrompt, k
   return { completed, failed };
 }
 
-async function translateWithOther(provider, total, sourceLang, targetLang, keepFormat, completedRef, failedRef) {
+async function translateWithOther(provider, total, sourceLang, targetLang, keepFormat) {
   const apiKey = document.getElementById('otherApiKey').value.trim();
   const useBatch = provider === 'google' || provider === 'deepl';
   const BATCH_SIZE = useBatch ? 50 : 1;
@@ -1149,8 +1154,16 @@ function finishTranslation(completed, failed, total) {
   statsBar.classList.remove('hidden');
   editorPanel.classList.remove('hidden');
 
+  // Show style adjust button for non-Gemini providers if we have results
   if (selectedProvider !== 'gemini' && translatedEntries.length > 0) {
-    styleAdjustBtn.classList.remove('hidden');
+    const geminiKey = document.getElementById('geminiApiKey').value.trim();
+    if (geminiKey) {
+      styleAdjustBtn.classList.remove('hidden');
+      log('✨ ปุ่ม "ปรับแต่ง Style ด้วย Gemini" พร้อมใช้งาน');
+    } else {
+      log('⚠️ ใส่ Gemini API Key เพื่อใช้งานปรับสไตล์หลังแปล');
+      showToast('ใส่ Gemini API Key เพื่อใช้งานปรับสไตล์หลังแปล', 'info');
+    }
   }
 
   if (failed === 0) {
