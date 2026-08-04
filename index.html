@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Subtitle Translator Pro v2.0.5 — Gemini Batch & Style Studio</title>
+<title>AI Subtitle Translator Pro v2.0.6 — Gemini Batch & Style Studio</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -44,7 +44,7 @@ body{font-family:'Noto Sans Thai','Inter',sans-serif;}
 <base target="_blank">
 </head>
 <body class="bg-gradient-to-br from-slate-100 via-violet-50 to-fuchsia-100 min-h-screen">
-<!-- AI Subtitle Translator Pro v2.0.5 | Codename: "Gemini Batch & Style Studio" -->
+<!-- AI Subtitle Translator Pro v2.0.6 | Codename: "Gemini Batch & Style Studio" -->
 
 <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
@@ -57,7 +57,7 @@ body{font-family:'Noto Sans Thai','Inter',sans-serif;}
   </div>
   <h1 class="text-3xl md:text-4xl font-bold text-slate-800 mb-1">AI Subtitle Translator Pro</h1>
   <div class="flex justify-center items-center gap-2 mb-2">
-    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-slate-800 text-white">v2.0.5</span>
+    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-slate-800 text-white">v2.0.6</span>
     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-violet-100 text-violet-700">"Gemini Batch & Style Studio"</span>
   </div>
   <p class="text-slate-500">แปลซับไตเติ้ลอัจฉริยะด้วย Gemini AI พร้อมปรับแต่ง Style ให้ลื่นไหล</p>
@@ -410,7 +410,7 @@ body{font-family:'Noto Sans Thai','Inter',sans-serif;}
 </div>
 
 <footer class="text-center mt-8 pb-6 text-slate-400 text-sm">
-  <p>⚡ AI Subtitle Translator Pro v2.0.5 "Gemini Batch & Style Studio" • รองรับ SRT, VTT, ASS/SSA • Batch Translation • Style Studio</p>
+  <p>⚡ AI Subtitle Translator Pro v2.0.6 "Gemini Batch & Style Studio" • รองรับ SRT, VTT, ASS/SSA • Batch Translation • Style Studio</p>
 </footer>
 </div>
 
@@ -789,6 +789,9 @@ async function callGemini(prompt, apiKey, model) {
     if (res.status === 429 || errText.includes('quota') || errText.includes('Quota') || errText.includes('RESOURCE_EXHAUSTED')) {
       throw new Error(`Gemini Quota หมด (HTTP 429) — ลองสร้างโปรเจคใหม่ + API Key ใหม่ หรือรอ 24 ชม.`);
     }
+    if (res.status === 503 || errText.includes('UNAVAILABLE') || errText.includes('high demand')) {
+      throw new Error(`Gemini Server ยุ่ง (HTTP 503) — กรุณารอสักครู่แล้วลองใหม่`);
+    }
     if (res.status === 404 || errText.includes('not found') || errText.includes('models')) {
       throw new Error(`โมเดล "${model}" ไม่พบ (HTTP 404) — ลองกด "ตรวจสอบ Key & โมเดล" เพื่อหาโมเดลที่ใช้ได้`);
     }
@@ -863,37 +866,8 @@ async function testGeminiKey() {
 
 // Batch translate with Gemini
 async function translateBatchGemini(batch, sourceLang, targetLang, stylePrompt, apiKey, model) {
-  // Auto-detect working model if current one fails
+  // Use the model from settings (already validated by testGeminiKey)
   let workingModel = model;
-  const fallbackModels = ['gemini-flash-latest', 'gemini-3.6-flash', 'gemini-pro-latest'];
-
-  // Test current model first
-  try {
-    const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-    const testRes = await fetch(testUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: 'test' }] }] }),
-      signal: abortController?.signal
-    });
-    if (!testRes.ok && testRes.status === 404) {
-      // Try fallbacks
-      for (const fm of fallbackModels) {
-        if (fm === model) continue;
-        try {
-          const fUrl = `https://generativelanguage.googleapis.com/v1beta/models/${fm}:generateContent?key=${apiKey}`;
-          const fRes = await fetch(fUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: 'test' }] }] }),
-            signal: abortController?.signal
-          });
-          if (fRes.ok) { workingModel = fm; log(`🔄 เปลี่ยนโมเดลเป็น ${fm}`); break; }
-        } catch(e) {}
-      }
-    }
-  } catch(e) {}
-
   const sl = sourceLang === 'auto' ? 'auto-detect' : sourceLang;
   const jsonArray = batch.map((b, i) => ({ id: i + 1, text: b.text }));
   const prompt = `You are a professional subtitle translator. Translate the following subtitles from ${sl} to ${targetLang}.
@@ -933,35 +907,7 @@ OUTPUT (JSON array only):`;
 
 // Style adjustment with Gemini (post-translation)
 async function styleAdjustBatchGemini(batch, targetLang, stylePrompt, apiKey, model) {
-  // Auto-detect working model if current one fails
   let workingModel = model;
-  const fallbackModels = ['gemini-flash-latest', 'gemini-3.6-flash', 'gemini-pro-latest'];
-
-  try {
-    const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-    const testRes = await fetch(testUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: 'test' }] }] }),
-      signal: abortController?.signal
-    });
-    if (!testRes.ok && testRes.status === 404) {
-      for (const fm of fallbackModels) {
-        if (fm === model) continue;
-        try {
-          const fUrl = `https://generativelanguage.googleapis.com/v1beta/models/${fm}:generateContent?key=${apiKey}`;
-          const fRes = await fetch(fUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: 'test' }] }] }),
-            signal: abortController?.signal
-          });
-          if (fRes.ok) { workingModel = fm; log(`🔄 เปลี่ยนโมเดลเป็น ${fm}`); break; }
-        } catch(e) {}
-      }
-    }
-  } catch(e) {}
-
   const jsonArray = batch.map((b, i) => ({ id: i + 1, text: b.text }));
   const prompt = `You are a subtitle style editor. Improve the following ${targetLang} subtitles to make them more natural and fluent according to the style below.
 
@@ -1121,9 +1067,16 @@ async function translateWithGemini(total, sourceLang, targetLang, stylePrompt, k
   const model = getGeminiModel();
   const batchSize = parseInt(document.getElementById('batchSize').value) || 10;
   let completed = 0, failed = 0;
+  let quotaExhausted = false;
+  let serverBusyRetries = 0;
 
   for (let i = 0; i < total; i += batchSize) {
     if (abortController.signal.aborted) { log('🛑 ยกเลิก'); break; }
+    if (quotaExhausted) {
+      log('⛔ Quota หมดแล้ว — ข้ามรายการที่เหลือทั้งหมด');
+      failed += Math.min(batchSize, total - i);
+      continue;
+    }
 
     const batch = [];
     for (let j = i; j < Math.min(i + batchSize, total); j++) {
@@ -1137,50 +1090,71 @@ async function translateWithGemini(total, sourceLang, targetLang, stylePrompt, k
 
     updateProgress(completed, total, `Batch ${Math.floor(i/batchSize)+1} / ${Math.ceil(total/batchSize)}`);
 
-    try {
-      const results = await translateBatchGemini(batch.map(b => ({ text: b.text })), sourceLang, targetLang, stylePrompt, apiKey, model);
-      results.forEach((res, bidx) => {
-        const item = batch[bidx];
-        let txt = res;
-        if (keepFormat && (fileFormat === 'ass' || fileFormat === 'ssa') && item.tags.length) {
-          txt = restoreTags(txt, item.tags);
-        }
-        translatedEntries[item.idx].text = txt;
-      });
-      completed += batch.length;
-      recordQuota(0, 0, 1); // record batch
-    } catch (err) {
-      log(`❌ Batch ${Math.floor(i/batchSize)+1} ล้มเหลว: ${err.message}`);
-      console.error('Full error:', err);
-      // Fallback: try smaller batches
-      if (batch.length > 1) {
-        log('🔄 ลองแบ่ง batch เล็กลง...');
-        for (const item of batch) {
-          if (abortController.signal.aborted) break;
-          try {
-            const results = await translateBatchGemini([{ text: item.text }], sourceLang, targetLang, stylePrompt, apiKey, model);
-            let txt = results[0];
-            if (keepFormat && (fileFormat === 'ass' || fileFormat === 'ssa') && item.tags.length) {
-              txt = restoreTags(txt, item.tags);
-            }
-            translatedEntries[item.idx].text = txt;
-            completed++;
-          } catch (e2) {
-            failed++;
-            log(`❌ รายการ ${item.idx+1} ล้มเหลว`);
+    let batchSuccess = false;
+    let retryCount = 0;
+    const maxRetries = 3;
+
+    while (!batchSuccess && retryCount <= maxRetries) {
+      try {
+        const results = await translateBatchGemini(batch.map(b => ({ text: b.text })), sourceLang, targetLang, stylePrompt, apiKey, model);
+        results.forEach((res, bidx) => {
+          const item = batch[bidx];
+          let txt = res;
+          if (keepFormat && (fileFormat === 'ass' || fileFormat === 'ssa') && item.tags.length) {
+            txt = restoreTags(txt, item.tags);
           }
-          await sleep(300);
+          translatedEntries[item.idx].text = txt;
+        });
+        completed += batch.length;
+        recordQuota(0, 0, 1);
+        batchSuccess = true;
+        serverBusyRetries = 0; // reset on success
+      } catch (err) {
+        const msg = err.message || '';
+        const isQuota = msg.includes('Quota หมด') || msg.includes('429') || msg.includes('quota') || msg.includes('RESOURCE_EXHAUSTED');
+        const isServerBusy = msg.includes('503') || msg.includes('UNAVAILABLE') || msg.includes('high demand');
+        const isModelNotFound = msg.includes('404') || msg.includes('not found') || msg.includes('models');
+
+        if (isQuota) {
+          quotaExhausted = true;
+          log(`⛔ Quota หมดแล้ว (Batch ${Math.floor(i/batchSize)+1}) — หยุดการแปล`);
+          showToast('Quota หมดแล้ว — กรุณาสร้าง API Key ใหม่หรือรอ 24 ชม.', 'error');
+          break; // exit retry loop
         }
-      } else {
-        failed += batch.length;
+
+        if (isServerBusy && retryCount < maxRetries) {
+          retryCount++;
+          const delayMs = Math.min(2000 * Math.pow(2, retryCount), 30000); // exponential backoff: 4s, 8s, 16s
+          log(`⏳ Server ยุ่ง (503) — รอ ${delayMs/1000}s แล้ว retry (${retryCount}/${maxRetries})...`);
+          await sleep(delayMs);
+          continue; // retry same batch
+        }
+
+        if (isModelNotFound) {
+          log(`❌ โมเดลไม่พบ — ลองสร้าง API Key ใหม่หรือเลือกโมเดลอื่น`);
+          showToast('โมเดลไม่พบ — ลองสร้าง API Key ใหม่', 'error');
+          quotaExhausted = true; // treat as fatal
+          break;
+        }
+
+        // Other errors — log and skip batch
+        log(`❌ Batch ${Math.floor(i/batchSize)+1} ล้มเหลว: ${msg.substring(0, 120)}`);
+        console.error('Full error:', err);
+        break; // exit retry loop, will mark as failed
       }
     }
 
-    updateProgress(completed, total, `แปลแล้ว ${completed}/${total}`);
+    if (!batchSuccess && !quotaExhausted) {
+      // Batch failed after retries — mark all items in batch as failed
+      failed += batch.length;
+      log(`❌ ข้าม Batch ${Math.floor(i/batchSize)+1} (${batch.length} รายการ) — ล้มเหลวหลัง retry`);
+    }
+
+    updateProgress(completed, total, `แปลแล้ว ${completed}/${total}${failed>0?` (ล้มเหลว ${failed})`:''}`);
     if (i % 20 === 0 || i + batchSize >= total) {
       renderPreview(translatedPreview, translatedEntries.slice(0, Math.min(completed + 5, total)), true);
     }
-    if (i + batchSize < total) await sleep(500);
+    if (i + batchSize < total && !quotaExhausted) await sleep(800);
   }
   return { completed, failed };
 }
