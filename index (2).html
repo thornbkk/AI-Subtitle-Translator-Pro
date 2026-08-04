@@ -1,0 +1,1379 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Subtitle Translator Pro v2.0.0 — Gemini Batch & Style Studio</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+body{font-family:'Noto Sans Thai','Inter',sans-serif;}
+.drop-zone{border:2px dashed #cbd5e1;transition:all .3s ease}
+.drop-zone.dragover{border-color:#8b5cf6;background:#f5f3ff;transform:scale(1.01)}
+.glass-panel{background:rgba(255,255,255,.95);backdrop-filter:blur(10px)}
+.progress-fill{transition:width .5s ease}
+.subtitle-entry{animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.tag-badge{font-size:.65rem;padding:2px 6px;border-radius:4px;font-weight:600}
+::-webkit-scrollbar{width:8px}
+::-webkit-scrollbar-track{background:#f1f5f9}
+::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:#64748b}
+.provider-card{transition:all .2s ease;cursor:pointer}
+.provider-card:hover{border-color:#8b5cf6;background:#f5f3ff}
+.provider-card.active{border-color:#8b5cf6;background:#f5f3ff;box-shadow:0 0 0 2px #8b5cf6}
+.style-card{transition:all .2s ease;cursor:pointer}
+.style-card:hover{border-color:#ec4899;background:#fdf2f8}
+.style-card.active{border-color:#ec4899;background:#fdf2f8;box-shadow:0 0 0 2px #ec4899}
+.toast{animation:slideIn .3s ease,fadeOut .3s ease 4.7s}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes fadeOut{from{opacity:1}to{opacity:0}}
+.gemini-gradient{background:linear-gradient(135deg,#4285f4,#34a853,#fbbc04,#ea4335);background-size:300% 300%;animation:geminiShift 4s ease infinite}
+@keyframes geminiShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.shimmer{position:relative;overflow:hidden}
+.shimmer::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);animation:shimmerMove 2s infinite}
+@keyframes shimmerMove{0%{left:-100%}100%{left:100%}}
+.quota-ring{position:relative;width:80px;height:80px}
+.quota-ring svg{transform:rotate(-90deg)}
+.quota-ring circle{fill:none;stroke-width:8}
+.quota-ring .bg{stroke:#e2e8f0}
+.quota-ring .progress{stroke:#8b5cf6;stroke-linecap:round;transition:stroke-dashoffset .5s ease}
+.quota-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:1.1rem;font-weight:700;color:#1e293b}
+</style>
+</head>
+<body class="bg-gradient-to-br from-slate-100 via-violet-50 to-fuchsia-100 min-h-screen">
+<!-- AI Subtitle Translator Pro v2.0.0 | Codename: "Gemini Batch & Style Studio" -->
+
+<div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+<div class="max-w-6xl mx-auto p-4 md:p-6">
+
+<!-- Header -->
+<header class="text-center mb-8">
+  <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl shadow-lg mb-4 gemini-gradient">
+    <i class="fas fa-language text-3xl text-white"></i>
+  </div>
+  <h1 class="text-3xl md:text-4xl font-bold text-slate-800 mb-1">AI Subtitle Translator Pro</h1>
+  <div class="flex justify-center items-center gap-2 mb-2">
+    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-slate-800 text-white">v2.0.0</span>
+    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-violet-100 text-violet-700">"Gemini Batch & Style Studio"</span>
+  </div>
+  <p class="text-slate-500">แปลซับไตเติ้ลอัจฉริยะด้วย Gemini AI พร้อมปรับแต่ง Style ให้ลื่นไหล</p>
+  <div class="flex justify-center gap-2 mt-3 flex-wrap">
+    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold text-white gemini-gradient"><i class="fas fa-sparkles"></i> Gemini AI</span>
+    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-violet-100 text-violet-700"><i class="fas fa-layer-group"></i> Batch Mode</span>
+    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-pink-100 text-pink-700"><i class="fas fa-palette"></i> Style Studio</span>
+  </div>
+</header>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+<!-- LEFT PANEL -->
+<div class="space-y-6">
+
+  <!-- Upload -->
+  <div class="glass-panel rounded-2xl shadow-sm border border-slate-200 p-6">
+    <h2 class="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2"><i class="fas fa-cloud-upload-alt text-violet-500"></i> 1. อัปโหลดไฟล์</h2>
+    <div id="dropZone" class="drop-zone rounded-xl p-8 text-center cursor-pointer bg-slate-50">
+      <i class="fas fa-file-import text-4xl text-slate-300 mb-3"></i>
+      <p class="text-slate-600 font-medium">ลากไฟล์มาวางที่นี่ หรือคลิกเลือก</p>
+      <p class="text-slate-400 text-sm mt-1">รองรับ .srt .vtt .ass .ssa</p>
+      <input type="file" id="fileInput" accept=".srt,.vtt,.ass,.ssa" class="hidden">
+    </div>
+    <div id="fileInfo" class="mt-4 hidden">
+      <div class="flex items-center gap-3 bg-violet-50 border border-violet-100 rounded-lg p-3">
+        <i class="fas fa-check-circle text-violet-500 text-xl"></i>
+        <div class="flex-1 min-w-0">
+          <p id="fileName" class="font-medium text-slate-700 truncate"></p>
+          <p id="fileMeta" class="text-sm text-slate-500"></p>
+        </div>
+        <button onclick="clearFile()" class="text-slate-400 hover:text-red-500 transition"><i class="fas fa-times"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Provider -->
+  <div class="glass-panel rounded-2xl shadow-sm border border-slate-200 p-6">
+    <h2 class="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2"><i class="fas fa-server text-violet-500"></i> 2. เลือก Provider</h2>
+    <div class="grid grid-cols-1 gap-3 mb-4">
+      <!-- Gemini -->
+      <div class="provider-card active border border-slate-200 rounded-xl p-4 flex items-start gap-3" data-provider="gemini" onclick="selectProvider('gemini')">
+        <div class="w-10 h-10 rounded-lg gemini-gradient flex items-center justify-center flex-shrink-0"><i class="fas fa-sparkles text-white"></i></div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-slate-700">Gemini AI</h3>
+            <span class="tag-badge bg-violet-100 text-violet-600">แนะนำ</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-1">แปล + ปรับ Style ในครั้งเดียว • รองรับ Batch • ประหยัด Quota</p>
+        </div>
+      </div>
+      <!-- Other Providers -->
+      <div class="provider-card border border-slate-200 rounded-xl p-4 flex items-start gap-3" data-provider="mymemory" onclick="selectProvider('mymemory')">
+        <div class="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0"><i class="fas fa-globe text-orange-500"></i></div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between"><h3 class="font-semibold text-slate-700">MyMemory</h3><span class="tag-badge bg-green-100 text-green-600">ฟรี</span></div>
+          <p class="text-xs text-slate-500 mt-1">ไม่ต้องใช้ API Key • จำกัด ~5,000 ตัวอักษร/วัน</p>
+        </div>
+      </div>
+      <div class="provider-card border border-slate-200 rounded-xl p-4 flex items-start gap-3" data-provider="google" onclick="selectProvider('google')">
+        <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0"><i class="fab fa-google text-blue-500"></i></div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between"><h3 class="font-semibold text-slate-700">Google Cloud</h3><span class="tag-badge bg-blue-100 text-blue-600">แม่นยำ</span></div>
+          <p class="text-xs text-slate-500 mt-1">ต้องใช้ API Key • ฟรี 500,000 ตัวอักษร/เดือน</p>
+        </div>
+      </div>
+      <div class="provider-card border border-slate-200 rounded-xl p-4 flex items-start gap-3" data-provider="deepl" onclick="selectProvider('deepl')">
+        <div class="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0"><i class="fas fa-brain text-red-500"></i></div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between"><h3 class="font-semibold text-slate-700">DeepL</h3><span class="tag-badge bg-amber-100 text-amber-600">คุณภาพสูง</span></div>
+          <p class="text-xs text-slate-500 mt-1">ต้องใช้ API Key • คุณภาพดีเยี่ยม</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gemini Settings -->
+    <div id="geminiSettings" class="space-y-3">
+      <div>
+        <label class="block text-sm font-medium text-slate-600 mb-1">Gemini API Key</label>
+        <div class="relative">
+          <input type="password" id="geminiApiKey" placeholder="ใส่ Gemini API Key" class="w-full rounded-lg border-slate-200 border p-2.5 pr-10 text-sm font-mono focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+          <button onclick="toggleKeyVisibility('geminiApiKey','geminiEye')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"><i class="fas fa-eye" id="geminiEye"></i></button>
+        </div>
+        <p class="text-xs text-amber-600 mt-1">⚠️ เก็บใน localStorage เท่านั้น ไม่ส่งไปเซิร์ฟเวอร์อื่น</p>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-medium text-slate-600 mb-1">โมเดล</label>
+          <select id="geminiModel" class="w-full rounded-lg border-slate-200 border p-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none bg-white">
+            <option value="gemini-2.0-flash">Gemini 2.0 Flash (เร็ว/ประหยัด)</option>
+            <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash (สมดุล)</option>
+            <option value="gemini-2.5-pro">Gemini 2.5 Pro (คุณภาพสูง)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-600 mb-1">Batch Size</label>
+          <select id="batchSize" class="w-full rounded-lg border-slate-200 border p-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none bg-white">
+            <option value="5">5 (ปลอดภัย)</option>
+            <option value="10" selected>10 (แนะนำ)</option>
+            <option value="20">20 (ประหยัด)</option>
+            <option value="50">50 (ประหยัดสุด)</option>
+          </select>
+        </div>
+      </div>
+      <div class="bg-violet-50 border border-violet-100 rounded-lg p-3 text-sm">
+        <p class="text-violet-700"><i class="fas fa-lightbulb mr-1"></i> <strong>Tip:</strong> Batch Size ยิ่งมากยิ่งประหยัด Quota แต่ใช้ Token มากขึ้น แนะนำ 10-20 สำหรับซับทั่วไป</p>
+      </div>
+    </div>
+
+    <!-- Other Provider Settings -->
+    <div id="otherProviderSettings" class="hidden space-y-3 mt-3">
+      <div id="apiKeySection" class="hidden">
+        <label class="block text-sm font-medium text-slate-600 mb-1">API Key</label>
+        <div class="relative">
+          <input type="password" id="otherApiKey" placeholder="API Key" class="w-full rounded-lg border-slate-200 border p-2.5 pr-10 text-sm font-mono focus:ring-2 focus:ring-blue-500 outline-none">
+          <button onclick="toggleKeyVisibility('otherApiKey','otherEye')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"><i class="fas fa-eye" id="otherEye"></i></button>
+        </div>
+      </div>
+      <div id="googleGuide" class="hidden bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700">
+        <ol class="list-decimal list-inside space-y-1">
+          <li>ไปที่ <a href="https://console.cloud.google.com/" target="_blank" class="underline">Google Cloud Console</a></li>
+          <li>เปิดใช้งาน Cloud Translation API</li>
+          <li>สร้าง API Key แล้วนำมาใส่</li>
+        </ol>
+      </div>
+      <div id="deeplGuide" class="hidden bg-red-50 border border-red-100 rounded-lg p-3 text-xs text-red-700">
+        <p>DeepL ต้องสมัครบัญชีและสร้าง API Key ที่ <a href="https://www.deepl.com/pro-api" target="_blank" class="underline">deepl.com</a></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Language & Options -->
+  <div class="glass-panel rounded-2xl shadow-sm border border-slate-200 p-6">
+    <h2 class="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2"><i class="fas fa-sliders-h text-teal-500"></i> 3. ตั้งค่าภาษา</h2>
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-600 mb-1">ภาษาต้นฉบับ</label>
+        <select id="sourceLang" class="w-full rounded-lg border-slate-200 border p-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none bg-white">
+          <option value="auto">🔍 ตรวจจับอัตโนมัติ</option>
+          <option value="en" selected>🇺🇸 อังกฤษ (English)</option>
+          <option value="ja">🇯🇵 ญี่ปุ่น (Japanese)</option>
+          <option value="ko">🇰🇷 เกาหลี (Korean)</option>
+          <option value="zh">🇨🇳 จีน (Chinese)</option>
+          <option value="th">🇹🇭 ไทย (Thai)</option>
+          <option value="es">🇪🇸 สเปน (Spanish)</option>
+          <option value="fr">🇫🇷 ฝรั่งเศส (French)</option>
+          <option value="de">🇩🇪 เยอรมัน (German)</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-600 mb-1">ภาษาเป้าหมาย</label>
+        <select id="targetLang" class="w-full rounded-lg border-slate-200 border p-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none bg-white">
+          <option value="th" selected>🇹🇭 ไทย (Thai)</option>
+          <option value="en">🇺🇸 อังกฤษ (English)</option>
+          <option value="ja">🇯🇵 ญี่ปุ่น (Japanese)</option>
+          <option value="ko">🇰🇷 เกาหลี (Korean)</option>
+          <option value="zh">🇨🇳 จีน (Chinese)</option>
+          <option value="es">🇪🇸 สเปน (Spanish)</option>
+          <option value="fr">🇫🇷 ฝรั่งเศส (French)</option>
+          <option value="de">🇩🇪 เยอรมัน (German)</option>
+        </select>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <label class="flex items-center gap-2 cursor-pointer">
+        <input type="checkbox" id="keepFormat" checked class="rounded border-slate-300 text-violet-500 focus:ring-violet-500">
+        <span class="text-sm text-slate-600">เก็บรักษา Format & Tags เดิม (ASS/SSA)</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Style Studio -->
+  <div class="glass-panel rounded-2xl shadow-sm border border-slate-200 p-6" id="styleStudioPanel">
+    <h2 class="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2"><i class="fas fa-palette text-pink-500"></i> 4. Style Studio <span class="text-xs font-normal text-slate-400">(เลือกสไตล์การแปล)</span></h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4" id="styleGrid">
+      <div class="style-card active border border-slate-200 rounded-xl p-3 text-center" data-style="natural" onclick="selectStyle('natural')">
+        <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-2"><i class="fas fa-feather text-green-600"></i></div>
+        <h4 class="text-sm font-semibold text-slate-700">ธรรมชาติ</h4>
+        <p class="text-xs text-slate-500 mt-1">ลื่นไหล เข้าใจง่าย</p>
+      </div>
+      <div class="style-card border border-slate-200 rounded-xl p-3 text-center" data-style="dramatic" onclick="selectStyle('dramatic')">
+        <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-2"><i class="fas fa-theater-masks text-red-600"></i></div>
+        <h4 class="text-sm font-semibold text-slate-700">ดราม่า</h4>
+        <p class="text-xs text-slate-500 mt-1">อินเนอร์แรง อารมณ์เต็ม</p>
+      </div>
+      <div class="style-card border border-slate-200 rounded-xl p-3 text-center" data-style="comedy" onclick="selectStyle('comedy')">
+        <div class="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center mx-auto mb-2"><i class="fas fa-laugh-beam text-yellow-600"></i></div>
+        <h4 class="text-sm font-semibold text-slate-700">ตลก / คอมเมดี้</h4>
+        <p class="text-xs text-slate-500 mt-1">รักษามุขตลก</p>
+      </div>
+      <div class="style-card border border-slate-200 rounded-xl p-3 text-center" data-style="professional" onclick="selectStyle('professional')">
+        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-2"><i class="fas fa-briefcase text-blue-600"></i></div>
+        <h4 class="text-sm font-semibold text-slate-700">ทางการ</h4>
+        <p class="text-xs text-slate-500 mt-1">สุภาพ กระชับ</p>
+      </div>
+      <div class="style-card border border-slate-200 rounded-xl p-3 text-center" data-style="anime" onclick="selectStyle('anime')">
+        <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center mx-auto mb-2"><i class="fas fa-tv text-purple-600"></i></div>
+        <h4 class="text-sm font-semibold text-slate-700">อนิเมะ</h4>
+        <p class="text-xs text-slate-500 mt-1">คำศัพท์เฉพาะ สนุก</p>
+      </div>
+      <div class="style-card border border-slate-200 rounded-xl p-3 text-center" data-style="literal" onclick="selectStyle('literal')">
+        <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-2"><i class="fas fa-ban text-slate-600"></i></div>
+        <h4 class="text-sm font-semibold text-slate-700">ไม่ปรับสไตล์</h4>
+        <p class="text-xs text-slate-500 mt-1">แปลตรงตัว</p>
+      </div>
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-slate-600 mb-1">Custom Prompt <span class="text-xs text-slate-400">(optional — จะแทนที่ตัวเลือกด้านบน)</span></label>
+      <textarea id="customPrompt" rows="2" placeholder="เช่น แปลให้สุภาพ ใช้ภาษาราชการ เน้นความถูกต้อง..." class="w-full rounded-lg border-slate-200 border p-2.5 text-sm focus:ring-2 focus:ring-pink-500 outline-none resize-none"></textarea>
+    </div>
+  </div>
+
+  <!-- Quota Panel -->
+  <div class="glass-panel rounded-2xl shadow-sm border border-slate-200 p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-slate-700 flex items-center gap-2"><i class="fas fa-chart-pie text-violet-500"></i> Gemini Quota Usage</h2>
+      <button onclick="resetQuota()" class="text-xs text-slate-400 hover:text-red-500 transition"><i class="fas fa-redo"></i> รีเซ็ตวันนี้</button>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="text-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+        <div class="text-2xl font-bold text-violet-600" id="quotaRequests">0</div>
+        <div class="text-xs text-slate-500">Requests</div>
+      </div>
+      <div class="text-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+        <div class="text-2xl font-bold text-violet-600" id="quotaTokens">0</div>
+        <div class="text-xs text-slate-500">Tokens (โดยประมาณ)</div>
+      </div>
+      <div class="text-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+        <div class="text-2xl font-bold text-violet-600" id="quotaBatches">0</div>
+        <div class="text-xs text-slate-500">Batches</div>
+      </div>
+      <div class="text-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+        <div class="text-2xl font-bold text-emerald-600" id="quotaSaved">0%</div>
+        <div class="text-xs text-slate-500">ประหยัด Quota</div>
+      </div>
+    </div>
+    <div class="mt-3 flex items-center gap-3">
+      <label class="text-sm text-slate-600">Daily Limit:</label>
+      <input type="number" id="dailyLimit" value="1500" class="w-24 rounded-lg border-slate-200 border p-1.5 text-sm text-center focus:ring-2 focus:ring-violet-500 outline-none">
+      <span class="text-xs text-slate-400">requests (ใช้ติดตามการใช้งาน)</span>
+    </div>
+    <div class="mt-2 h-2 bg-slate-100 rounded-full overflow-hidden">
+      <div id="quotaBar" class="h-full bg-gradient-to-r from-violet-500 to-pink-500 rounded-full transition-all" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- Translate Buttons -->
+  <div class="glass-panel rounded-2xl shadow-sm border border-slate-200 p-6">
+    <h2 class="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2"><i class="fas fa-play-circle text-emerald-500"></i> 5. เริ่มแปล</h2>
+    <div class="flex flex-wrap gap-3">
+      <button id="translateBtn" onclick="startTranslation()" disabled class="shimmer flex-1 min-w-[200px] bg-gradient-to-r from-violet-500 to-fuchsia-600 hover:from-violet-600 hover:to-fuchsia-700 disabled:from-slate-300 disabled:to-slate-400 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl shadow-md transition-all transform active:scale-[0.98] flex items-center justify-center gap-2">
+        <i class="fas fa-language"></i><span>เริ่มแปล</span>
+      </button>
+      <button id="styleAdjustBtn" onclick="startStyleAdjust()" class="hidden flex-1 min-w-[200px] bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white font-semibold py-3 rounded-xl shadow-md transition-all transform active:scale-[0.98] flex items-center justify-center gap-2">
+        <i class="fas fa-sparkles"></i><span>✨ ปรับแต่งให้ลื่นไหลด้วย Gemini</span>
+      </button>
+      <button id="exportBtn" onclick="downloadFile()" disabled class="flex-1 min-w-[200px] bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 disabled:from-slate-300 disabled:to-slate-400 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl shadow-md transition-all transform active:scale-[0.98] flex items-center justify-center gap-2">
+        <i class="fas fa-download"></i><span>ดาวน์โหลดไฟล์</span>
+      </button>
+    </div>
+
+    <!-- Progress -->
+    <div id="progressSection" class="mt-4 hidden">
+      <div class="flex justify-between items-center mb-2">
+        <span id="progressText" class="text-sm font-medium text-slate-600">กำลังเตรียม...</span>
+        <span id="progressPercent" class="text-sm font-bold text-violet-600">0%</span>
+      </div>
+      <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+        <div id="progressBar" class="progress-fill bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500 h-full rounded-full" style="width:0%"></div>
+      </div>
+      <div id="progressDetail" class="text-xs text-slate-400 mt-2 font-mono"></div>
+      <button onclick="cancelTranslation()" id="cancelBtn" class="mt-3 w-full py-2 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 text-sm font-medium transition">
+        <i class="fas fa-stop-circle mr-1"></i> ยกเลิกการแปล
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div id="statsBar" class="hidden glass-panel rounded-2xl shadow-sm border border-slate-200 p-4">
+    <div class="flex flex-wrap gap-4 justify-around">
+      <div class="text-center"><div class="text-xl font-bold text-slate-700" id="statTotal">0</div><div class="text-xs text-slate-500">บรรทัด</div></div>
+      <div class="text-center"><div class="text-xl font-bold text-emerald-600" id="statDone">0</div><div class="text-xs text-slate-500">แปลแล้ว</div></div>
+      <div class="text-center"><div class="text-xl font-bold text-violet-600" id="statTime">0s</div><div class="text-xs text-slate-500">ใช้เวลา</div></div>
+      <div class="text-center"><div class="text-xl font-bold text-slate-700" id="statFormat">—</div><div class="text-xs text-slate-500">ฟอร์แมต</div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- RIGHT PANEL: Preview -->
+<div class="space-y-6">
+
+  <!-- Original -->
+  <div class="glass-panel rounded-2xl shadow-sm border border-slate-200 p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-slate-700 flex items-center gap-2"><i class="fas fa-eye text-slate-400"></i> ต้นฉบับ</h2>
+      <span id="originalCount" class="tag-badge bg-slate-100 text-slate-500">0 บรรทัด</span>
+    </div>
+    <div id="originalPreview" class="h-64 overflow-y-auto bg-slate-50 rounded-xl border border-slate-100 p-4 text-sm space-y-2">
+      <p class="text-slate-400 text-center py-12">ยังไม่มีไฟล์ กรุณาอัปโหลดไฟล์ซับไตเติ้ล</p>
+    </div>
+  </div>
+
+  <!-- Translated -->
+  <div class="glass-panel rounded-2xl shadow-sm border border-slate-200 p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-slate-700 flex items-center gap-2"><i class="fas fa-language text-emerald-500"></i> ผลลัพธ์</h2>
+      <div class="flex gap-2">
+        <span id="translatedCount" class="tag-badge bg-emerald-50 text-emerald-600 hidden">0 บรรทัด</span>
+        <span id="styleBadge" class="tag-badge bg-pink-50 text-pink-600 hidden"><i class="fas fa-sparkles"></i> Styled</span>
+      </div>
+    </div>
+    <div id="translatedPreview" class="h-64 overflow-y-auto bg-emerald-50/50 rounded-xl border border-emerald-100 p-4 text-sm space-y-2">
+      <p class="text-slate-400 text-center py-12">ผลลัพธ์จะแสดงที่นี่หลังแปลเสร็จ</p>
+    </div>
+  </div>
+
+  <!-- Side-by-Side Editor -->
+  <div class="glass-panel rounded-2xl shadow-sm border border-slate-200 p-6 hidden" id="editorPanel">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-slate-700 flex items-center gap-2"><i class="fas fa-columns text-violet-500"></i> ตัวแก้ไข (Side-by-Side)</h2>
+      <div class="flex gap-2">
+        <button onclick="switchEditorTab('side')" id="tabBtnSide" class="px-3 py-1 rounded-lg text-xs font-medium bg-violet-100 text-violet-700">คู่ขนาน</button>
+        <button onclick="switchEditorTab('trans')" id="tabBtnTrans" class="px-3 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-600">แก้ไขผลลัพธ์</button>
+      </div>
+    </div>
+    <div id="editorSide" class="h-80 overflow-y-auto bg-slate-50 rounded-xl border border-slate-100 p-4 text-sm space-y-2">
+      <p class="text-slate-400 text-center py-12">แสดงต้นฉบับและผลลัพธ์คู่กัน</p>
+    </div>
+    <div id="editorTransOnly" class="hidden h-80 overflow-y-auto bg-emerald-50/50 rounded-xl border border-emerald-100 p-4 text-sm space-y-2">
+      <p class="text-slate-400 text-center py-12">แก้ไขผลลัพธ์ได้โดยตรง</p>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- Log Panel -->
+<div id="logPanel" class="mt-6 glass-panel rounded-2xl shadow-sm border border-slate-200 p-4 hidden">
+  <div class="flex items-center justify-between mb-2">
+    <h3 class="text-sm font-semibold text-slate-600"><i class="fas fa-terminal mr-1"></i> บันทึกการทำงาน</h3>
+    <button onclick="clearLog()" class="text-xs text-slate-400 hover:text-slate-600">ล้าง</button>
+  </div>
+  <div id="logContent" class="bg-slate-900 rounded-lg p-3 h-40 overflow-y-auto text-xs font-mono text-green-400 space-y-1"></div>
+</div>
+
+<footer class="text-center mt-8 pb-6 text-slate-400 text-sm">
+  <p>⚡ AI Subtitle Translator Pro v2.0.0 "Gemini Batch & Style Studio" • รองรับ SRT, VTT, ASS/SSA • Batch Translation • Style Studio</p>
+</footer>
+</div>
+
+<script>
+// ==================== STATE ====================
+let currentFile = null;
+let currentEntries = [];
+let translatedEntries = [];
+let fileFormat = '';
+let isTranslating = false;
+let abortController = null;
+let selectedProvider = 'gemini';
+let selectedStyle = 'natural';
+let startTime = 0;
+let quotaData = loadQuota();
+
+// ==================== STYLE PROMPTS ====================
+const STYLE_PROMPTS = {
+  natural: `แปลให้เป็นภาษาพูดที่ฟังแล้วเข้าใจง่าย ลื่นไหล ไม่ติดตำรา ไม่จงใจแปลตรงตัวเกินไป เหมาะกับซีรีส์/หนังทั่วไป`,
+  dramatic: `แปลให้เน้นอารมณ์ความรู้สึก ใช้คำหนักแน่น ดราม่า อินเนอร์แรง เหมาะกับฉากดราม่า อาชญากรรม หรือหนังเข้มข้น`,
+  comedy: `แปลให้สนุก รักษาความตลก มุขตลก และจังหวะการเล่าเรื่อง เหมาะกับคอมเมดี้ ซิทคอม หรือหนังตลก`,
+  professional: `แปลด้วยภาษาสุภาพ กระชับ เป็นการ เหมาะกับสารคดี วิดีโอทางการ หรือเนื้อหาเชิงวิชาการ`,
+  anime: `แปลให้คงเสน่ห์ของต้นฉบับ ใช้คำศัพท์เฉพาะของอนิเมะ/การ์ตูน เน้นความสนุกและความเป็นวัยรุ่น เหมาะกับอนิเมะและการ์ตูน`,
+  literal: `แปลตรงตัวตามต้นฉบับ ไม่ปรับแต่งสไตล์ เก็บความหมายดั้งเดิมให้มากที่สุด`
+};
+
+// ==================== DOM ====================
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileInfo = document.getElementById('fileInfo');
+const fileName = document.getElementById('fileName');
+const fileMeta = document.getElementById('fileMeta');
+const translateBtn = document.getElementById('translateBtn');
+const styleAdjustBtn = document.getElementById('styleAdjustBtn');
+const exportBtn = document.getElementById('exportBtn');
+const originalPreview = document.getElementById('originalPreview');
+const translatedPreview = document.getElementById('translatedPreview');
+const originalCount = document.getElementById('originalCount');
+const translatedCount = document.getElementById('translatedCount');
+const styleBadge = document.getElementById('styleBadge');
+const progressSection = document.getElementById('progressSection');
+const progressBar = document.getElementById('progressBar');
+const progressPercent = document.getElementById('progressPercent');
+const progressText = document.getElementById('progressText');
+const progressDetail = document.getElementById('progressDetail');
+const logPanel = document.getElementById('logPanel');
+const logContent = document.getElementById('logContent');
+const geminiSettings = document.getElementById('geminiSettings');
+const otherProviderSettings = document.getElementById('otherProviderSettings');
+const apiKeySection = document.getElementById('apiKeySection');
+const googleGuide = document.getElementById('googleGuide');
+const deeplGuide = document.getElementById('deeplGuide');
+const statsBar = document.getElementById('statsBar');
+const editorPanel = document.getElementById('editorPanel');
+
+// ==================== INIT ====================
+document.addEventListener('DOMContentLoaded', () => {
+  const savedKey = localStorage.getItem('gemini_api_key');
+  if (savedKey) document.getElementById('geminiApiKey').value = savedKey;
+  updateQuotaUI();
+});
+
+// ==================== EVENTS ====================
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('dragover');
+  if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e => { if (e.target.files.length > 0) handleFile(e.target.files[0]); });
+
+document.getElementById('geminiApiKey').addEventListener('change', e => {
+  localStorage.setItem('gemini_api_key', e.target.value);
+});
+
+// ==================== PROVIDER SELECTION ====================
+function selectProvider(provider) {
+  selectedProvider = provider;
+  document.querySelectorAll('.provider-card').forEach(el => el.classList.remove('active'));
+  document.querySelector(`[data-provider="${provider}"]`).classList.add('active');
+
+  if (provider === 'gemini') {
+    geminiSettings.classList.remove('hidden');
+    otherProviderSettings.classList.add('hidden');
+    styleAdjustBtn.classList.add('hidden');
+  } else {
+    geminiSettings.classList.add('hidden');
+    otherProviderSettings.classList.remove('hidden');
+    apiKeySection.classList.add('hidden');
+    googleGuide.classList.add('hidden');
+    deeplGuide.classList.add('hidden');
+
+    if (provider === 'google') { apiKeySection.classList.remove('hidden'); googleGuide.classList.remove('hidden'); }
+    if (provider === 'deepl') { apiKeySection.classList.remove('hidden'); deeplGuide.classList.remove('hidden'); }
+    // Show style adjust button if we have translated results
+    if (translatedEntries.length > 0) styleAdjustBtn.classList.remove('hidden');
+  }
+  log(`🔧 Provider: ${provider}`);
+}
+
+function toggleKeyVisibility(inputId, iconId) {
+  const input = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  const isHidden = input.type === 'password';
+  input.type = isHidden ? 'text' : 'password';
+  icon.className = isHidden ? 'fas fa-eye-slash' : 'fas fa-eye';
+}
+
+// ==================== STYLE SELECTION ====================
+function selectStyle(style) {
+  selectedStyle = style;
+  document.querySelectorAll('.style-card').forEach(el => el.classList.remove('active'));
+  document.querySelector(`[data-style="${style}"]`).classList.add('active');
+}
+
+function getStylePrompt() {
+  const custom = document.getElementById('customPrompt').value.trim();
+  if (custom) return custom;
+  return STYLE_PROMPTS[selectedStyle] || STYLE_PROMPTS.natural;
+}
+
+// ==================== FILE HANDLING ====================
+function handleFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['srt','vtt','ass','ssa'].includes(ext)) {
+    showToast('รองรับเฉพาะ .srt .vtt .ass .ssa', 'error'); return;
+  }
+  currentFile = file;
+  fileFormat = ext;
+  fileName.textContent = file.name;
+  fileMeta.textContent = `${(file.size/1024).toFixed(1)} KB • ${ext.toUpperCase()}`;
+  fileInfo.classList.remove('hidden');
+  translateBtn.disabled = false;
+
+  const reader = new FileReader();
+  reader.onload = e => { parseAndPreview(e.target.result, ext); };
+  reader.readAsText(file);
+  log(`📁 โหลด: ${file.name}`);
+  showToast(`โหลด ${file.name} สำเร็จ`, 'success');
+}
+
+function clearFile() {
+  currentFile = null; currentEntries = []; translatedEntries = [];
+  fileInput.value = ''; fileInfo.classList.add('hidden');
+  translateBtn.disabled = true; exportBtn.disabled = true;
+  styleAdjustBtn.classList.add('hidden');
+  originalPreview.innerHTML = '<p class="text-slate-400 text-center py-12">ยังไม่มีไฟล์</p>';
+  translatedPreview.innerHTML = '<p class="text-slate-400 text-center py-12">ผลลัพธ์จะแสดงที่นี่</p>';
+  originalCount.textContent = '0 บรรทัด';
+  translatedCount.classList.add('hidden'); styleBadge.classList.add('hidden');
+  progressSection.classList.add('hidden'); statsBar.classList.add('hidden');
+  editorPanel.classList.add('hidden');
+  document.getElementById('editorSide').innerHTML = '<p class="text-slate-400 text-center py-12">แสดงต้นฉบับและผลลัพธ์คู่กัน</p>';
+  document.getElementById('editorTransOnly').innerHTML = '<p class="text-slate-400 text-center py-12">แก้ไขผลลัพธ์ได้โดยตรง</p>';
+}
+
+// ==================== PARSERS ====================
+function parseAndPreview(content, format) {
+  try {
+    if (format === 'srt') currentEntries = parseSRT(content);
+    else if (format === 'vtt') currentEntries = parseVTT(content);
+    else if (format === 'ass' || format === 'ssa') currentEntries = parseASS(content);
+    originalCount.textContent = `${currentEntries.length} บรรทัด`;
+    renderPreview(originalPreview, currentEntries, false);
+    log(`✅ แยกข้อมูลได้ ${currentEntries.length} รายการ`);
+  } catch (err) {
+    showToast('ไม่สามารถอ่านไฟล์ได้: ' + err.message, 'error');
+    log(`❌ Error: ${err.message}`);
+  }
+}
+
+function parseSRT(content) {
+  const entries = [];
+  const blocks = content.trim().split(/\n\s*\n/);
+  for (const block of blocks) {
+    const lines = block.trim().split('\n');
+    if (lines.length < 3) continue;
+    const idx = lines[0].trim();
+    const timeLine = lines[1].trim();
+    const text = lines.slice(2).join('\n');
+    const m = timeLine.match(/(.*?)\s*-->\s*(.*?)(\s*\{.*)?$/);
+    if (!m) continue;
+    entries.push({ index: idx, start: m[1].trim(), end: m[2].trim(), text, raw: block });
+  }
+  return entries;
+}
+
+function parseVTT(content) {
+  const entries = [];
+  const lines = content.split('\n');
+  let i = 0;
+  while (i < lines.length && !lines[i].includes('-->')) i++;
+  while (i < lines.length) {
+    if (!lines[i].includes('-->')) { i++; continue; }
+    const m = lines[i].trim().match(/(.*?)\s*-->\s*(.*?)(\s.*)?$/);
+    if (!m) { i++; continue; }
+    let text = ''; i++;
+    while (i < lines.length && lines[i].trim() !== '' && !lines[i].includes('-->')) {
+      text += (text ? '\n' : '') + lines[i]; i++;
+    }
+    entries.push({ index: entries.length + 1, start: m[1].trim(), end: m[2].trim(), text: text.trim(), raw: '' });
+  }
+  return entries;
+}
+
+function parseASS(content) {
+  const entries = [];
+  const lines = content.split('\n');
+  let inEvents = false;
+  let formatCols = [];
+  for (const line of lines) {
+    const t = line.trim();
+    if (t === '[Events]') { inEvents = true; continue; }
+    if (t.startsWith('[') && t.endsWith(']')) { inEvents = false; continue; }
+    if (!inEvents) continue;
+    if (t.startsWith('Format:')) { formatCols = t.replace('Format:','').split(',').map(s=>s.trim()); continue; }
+    if (!t.startsWith('Dialogue:')) continue;
+    const parts = t.substring(9).split(',');
+    const text = parts.slice(formatCols.length - 1).join(',').replace(/\\N/g, '\n');
+    entries.push({
+      index: entries.length + 1,
+      start: formatCols.indexOf('Start') >= 0 ? parts[formatCols.indexOf('Start')] : '',
+      end: formatCols.indexOf('End') >= 0 ? parts[formatCols.indexOf('End')] : '',
+      text, raw: t, formatCols, parts
+    });
+  }
+  return entries;
+}
+
+// ==================== RENDER ====================
+function renderPreview(container, entries, isTranslated) {
+  if (!entries.length) return;
+  container.innerHTML = '';
+  entries.forEach(entry => {
+    const div = document.createElement('div');
+    div.className = 'subtitle-entry bg-white rounded-lg p-3 border border-slate-100 shadow-sm';
+    const timeBadge = `<span class="tag-badge bg-slate-100 text-slate-500 font-mono">${escapeHtml(entry.start)}</span>`;
+    div.innerHTML = `
+      <div class="flex items-start gap-2">
+        <span class="text-xs font-bold text-slate-300 mt-0.5">${entry.index}</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">${timeBadge}</div>
+          <p class="${isTranslated ? 'text-slate-800 font-medium' : 'text-slate-600'} leading-relaxed whitespace-pre-wrap">${escapeHtml(entry.text)}</p>
+        </div>
+      </div>`;
+    container.appendChild(div);
+  });
+  container.scrollTop = 0;
+}
+
+function renderSideBySide(orig, trans) {
+  const container = document.getElementById('editorSide');
+  container.innerHTML = '';
+  const maxLen = Math.max(orig.length, trans.length);
+  for (let i = 0; i < maxLen; i++) {
+    const o = orig[i]; const t = trans[i];
+    const div = document.createElement('div');
+    div.className = 'subtitle-entry bg-white rounded-lg p-3 border border-slate-100 shadow-sm';
+    div.innerHTML = `
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div class="border-r-0 md:border-r border-slate-100 pr-0 md:pr-3">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-xs font-bold text-slate-300">${o ? o.index : '-'}</span>
+            <span class="tag-badge bg-slate-100 text-slate-500 font-mono">${o ? escapeHtml(o.start) : ''}</span>
+          </div>
+          <p class="text-slate-500 text-sm whitespace-pre-wrap">${o ? escapeHtml(o.text) : ''}</p>
+        </div>
+        <div class="pl-0 md:pl-3">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-xs font-bold text-slate-300">${t ? t.index : '-'}</span>
+            <span class="tag-badge bg-emerald-100 text-emerald-600 font-mono">${t ? escapeHtml(t.start) : ''}</span>
+          </div>
+          <p class="text-slate-800 text-sm font-medium whitespace-pre-wrap">${t ? escapeHtml(t.text) : ''}</p>
+        </div>
+      </div>`;
+    container.appendChild(div);
+  }
+}
+
+function renderTransOnlyEditor(entries) {
+  const container = document.getElementById('editorTransOnly');
+  container.innerHTML = '';
+  entries.forEach((entry, idx) => {
+    const div = document.createElement('div');
+    div.className = 'subtitle-entry bg-white rounded-lg p-3 border border-slate-100 shadow-sm';
+    div.innerHTML = `
+      <div class="flex items-start gap-2">
+        <span class="text-xs font-bold text-slate-300 mt-1">${entry.index}</span>
+        <div class="flex-1">
+          <span class="tag-badge bg-emerald-100 text-emerald-600 font-mono text-xs">${escapeHtml(entry.start)}</span>
+          <textarea data-idx="${idx}" class="w-full mt-1 rounded border-slate-200 border p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none resize-none" rows="2">${escapeHtml(entry.text)}</textarea>
+        </div>
+      </div>`;
+    container.appendChild(div);
+  });
+  // Auto-save on change
+  container.querySelectorAll('textarea').forEach(ta => {
+    ta.addEventListener('change', e => {
+      const idx = parseInt(e.target.dataset.idx);
+      translatedEntries[idx].text = e.target.value;
+    });
+  });
+}
+
+function switchEditorTab(tab) {
+  const side = document.getElementById('editorSide');
+  const trans = document.getElementById('editorTransOnly');
+  const btnSide = document.getElementById('tabBtnSide');
+  const btnTrans = document.getElementById('tabBtnTrans');
+  if (tab === 'side') {
+    side.classList.remove('hidden'); trans.classList.add('hidden');
+    btnSide.className = 'px-3 py-1 rounded-lg text-xs font-medium bg-violet-100 text-violet-700';
+    btnTrans.className = 'px-3 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-600';
+  } else {
+    side.classList.add('hidden'); trans.classList.remove('hidden');
+    renderTransOnlyEditor(translatedEntries);
+    btnSide.className = 'px-3 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-600';
+    btnTrans.className = 'px-3 py-1 rounded-lg text-xs font-medium bg-emerald-100 text-emerald-700';
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ==================== GEMINI API ====================
+function getGeminiApiKey() {
+  const key = document.getElementById('geminiApiKey').value.trim();
+  if (!key) throw new Error('กรุณาใส่ Gemini API Key');
+  return key;
+}
+
+function getGeminiModel() {
+  return document.getElementById('geminiModel').value || 'gemini-2.5-flash';
+}
+
+async function callGemini(prompt, apiKey, model) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const body = {
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { temperature: 0.3, maxOutputTokens: 8192 }
+  };
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal: abortController?.signal
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const msg = err.error?.message || `HTTP ${res.status}`;
+    if (msg.includes('API key not valid')) throw new Error('Gemini API Key ไม่ถูกต้อง');
+    if (msg.includes('quota') || msg.includes('Quota')) throw new Error('Gemini Quota หมดแล้ว กรุณารอหรือตรวจสอบแผน');
+    if (msg.includes('model') && msg.includes('not found')) throw new Error(`โมเดล ${model} ไม่พร้อมใช้งาน ลองเปลี่ยนโมเดล`);
+    throw new Error(`Gemini: ${msg}`);
+  }
+  const data = await res.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  // Estimate tokens (rough: ~4 chars per token)
+  const inputTokens = Math.ceil(prompt.length / 4);
+  const outputTokens = Math.ceil(text.length / 4);
+  recordQuota(1, inputTokens + outputTokens, 0);
+  return text;
+}
+
+// Batch translate with Gemini
+async function translateBatchGemini(batch, sourceLang, targetLang, stylePrompt, apiKey, model) {
+  const sl = sourceLang === 'auto' ? 'auto-detect' : sourceLang;
+  const jsonArray = batch.map((b, i) => ({ id: i + 1, text: b.text }));
+  const prompt = `You are a professional subtitle translator. Translate the following subtitles from ${sl} to ${targetLang}.
+
+STYLE INSTRUCTION: ${stylePrompt}
+
+RULES:
+- Keep the meaning accurate but apply the style naturally.
+- Do NOT add explanations, notes, or numbering.
+- Preserve any formatting tags like {\an8}, {\i1}, <i>, <b> etc.
+- Return ONLY a valid JSON array with the same "id" and translated "text".
+
+INPUT:
+${JSON.stringify(jsonArray, null, 2)}
+
+OUTPUT (JSON array only):`;
+
+  const raw = await callGemini(prompt, apiKey, model);
+  // Extract JSON from response
+  let jsonStr = raw;
+  const codeBlock = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlock) jsonStr = codeBlock[1].trim();
+  // Try to find array
+  const arrMatch = jsonStr.match(/\[[\s\S]*\]/);
+  if (arrMatch) jsonStr = arrMatch[0];
+
+  let results;
+  try {
+    results = JSON.parse(jsonStr);
+  } catch (e) {
+    // Fallback: try line-by-line parsing
+    throw new Error('Gemini ตอบกลับไม่เป็น JSON ที่ถูกต้อง ลองลด Batch Size');
+  }
+  if (!Array.isArray(results)) throw new Error('ผลลัพธ์ไม่ใช่ Array');
+  return results.map(r => r.text || '');
+}
+
+// Style adjustment with Gemini (post-translation)
+async function styleAdjustBatchGemini(batch, targetLang, stylePrompt, apiKey, model) {
+  const jsonArray = batch.map((b, i) => ({ id: i + 1, text: b.text }));
+  const prompt = `You are a subtitle style editor. Improve the following ${targetLang} subtitles to make them more natural and fluent according to the style below.
+
+STYLE INSTRUCTION: ${stylePrompt}
+
+RULES:
+- Keep timing and meaning intact.
+- Only improve wording, flow, and style.
+- Do NOT add explanations or change the structure.
+- Preserve any formatting tags.
+- Return ONLY a valid JSON array with the same "id" and improved "text".
+
+INPUT:
+${JSON.stringify(jsonArray, null, 2)}
+
+OUTPUT (JSON array only):`;
+
+  const raw = await callGemini(prompt, apiKey, model);
+  let jsonStr = raw;
+  const codeBlock = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlock) jsonStr = codeBlock[1].trim();
+  const arrMatch = jsonStr.match(/\[[\s\S]*\]/);
+  if (arrMatch) jsonStr = arrMatch[0];
+
+  let results;
+  try { results = JSON.parse(jsonStr); } catch (e) {
+    throw new Error('Gemini ตอบกลับไม่เป็น JSON ลองลด Batch Size');
+  }
+  if (!Array.isArray(results)) throw new Error('ผลลัพธ์ไม่ใช่ Array');
+  return results.map(r => r.text || '');
+}
+
+// ==================== OTHER PROVIDERS ====================
+async function translateMyMemory(text, source, target) {
+  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${source}|${target}`;
+  const res = await fetch(url, { signal: abortController?.signal });
+  const data = await res.json();
+  if (data.responseStatus === 200) return data.responseData.translatedText;
+  throw new Error(data.responseDetails || 'MyMemory Error');
+}
+
+async function translateGoogle(text, apiKey, source, target) {
+  const url = `https://translation.googleapis.com/language/translate/v2?key=${apiKey}`;
+  const body = { q: text, target: target, format: 'text' };
+  if (source !== 'auto') body.source = source;
+  const res = await fetch(url, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body), signal: abortController?.signal
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const msg = err.error?.message || `HTTP ${res.status}`;
+    if (msg.includes('API key not valid')) throw new Error('Google API Key ไม่ถูกต้อง');
+    if (msg.includes('disabled')) throw new Error('Cloud Translation API ยังไม่ได้เปิดใช้งาน');
+    if (msg.includes('quota')) throw new Error('เกิน Quota Google');
+    throw new Error(msg);
+  }
+  const data = await res.json();
+  return data.data.translations[0].translatedText;
+}
+
+async function translateDeepL(text, apiKey, source, target) {
+  const isFree = apiKey.endsWith(':fx');
+  const url = isFree ? 'https://api-free.deepl.com/v2/translate' : 'https://api.deepl.com/v2/translate';
+  const params = new URLSearchParams();
+  params.append('text', text);
+  params.append('target_lang', target.toUpperCase() === 'TH' ? 'TH' : target.toUpperCase());
+  if (source !== 'auto') params.append('source_lang', source.toUpperCase());
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Authorization': `DeepL-Auth-Key ${apiKey}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params, signal: abortController?.signal
+  });
+  if (!res.ok) { const txt = await res.text(); throw new Error(`DeepL: ${txt}`); }
+  const data = await res.json();
+  return data.translations[0].text;
+}
+
+async function translateTextGeneric(text, provider, source, target, apiKey) {
+  if (!text.trim()) return text;
+  const sl = source === 'auto' ? 'en' : source;
+  switch (provider) {
+    case 'mymemory': return await translateMyMemory(text, sl, target);
+    case 'google': return await translateGoogle(text, apiKey, source, target);
+    case 'deepl': return await translateDeepL(text, apiKey, source, target);
+    default: return text;
+  }
+}
+
+// ==================== TAG PROTECTION ====================
+function protectTags(text) {
+  const tags = [];
+  const protectedText = text.replace(/\{[^}]+\}/g, m => { tags.push(m); return `@@@@${tags.length-1}@@@@`; })
+                            .replace(/<[^>]+>/g, m => { tags.push(m); return `@@@@${tags.length-1}@@@@`; });
+  return { text: protectedText, tags };
+}
+function restoreTags(text, tags) {
+  return text.replace(/@@@@(\d+)@@@@/g, (m, i) => tags[parseInt(i)] || m);
+}
+
+// ==================== TRANSLATION ORCHESTRATION ====================
+async function startTranslation() {
+  if (!currentEntries.length || isTranslating) return;
+  const provider = selectedProvider;
+  const sourceLang = document.getElementById('sourceLang').value;
+  const targetLang = document.getElementById('targetLang').value;
+  const keepFormat = document.getElementById('keepFormat').checked;
+  const stylePrompt = getStylePrompt();
+
+  // Validate
+  if (provider === 'gemini') {
+    try { getGeminiApiKey(); } catch (e) { showToast(e.message, 'error'); return; }
+  } else {
+    const otherKey = document.getElementById('otherApiKey').value.trim();
+    if ((provider === 'google' || provider === 'deepl') && !otherKey) {
+      showToast('กรุณาใส่ API Key', 'error'); return;
+    }
+  }
+
+  isTranslating = true;
+  abortController = new AbortController();
+  translateBtn.disabled = true;
+  translateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังแปล...';
+  exportBtn.disabled = true;
+  styleAdjustBtn.classList.add('hidden');
+  progressSection.classList.remove('hidden');
+  logPanel.classList.remove('hidden');
+  statsBar.classList.add('hidden');
+  editorPanel.classList.add('hidden');
+  styleBadge.classList.add('hidden');
+  startTime = Date.now();
+  log(`🚀 เริ่มแปลด้วย ${provider.toUpperCase()}`);
+
+  translatedEntries = JSON.parse(JSON.stringify(currentEntries));
+  const total = currentEntries.length;
+  let completed = 0, failed = 0;
+
+  try {
+    if (provider === 'gemini') {
+      await translateWithGemini(total, sourceLang, targetLang, stylePrompt, keepFormat, completed, failed);
+    } else {
+      await translateWithOther(provider, total, sourceLang, targetLang, keepFormat, completed, failed);
+    }
+  } catch (err) {
+    log(`❌ ข้อผิดพลาด: ${err.message}`);
+    showToast(err.message, 'error');
+  }
+
+  finishTranslation(completed, failed, total);
+}
+
+async function translateWithGemini(total, sourceLang, targetLang, stylePrompt, keepFormat, completedRef, failedRef) {
+  const apiKey = getGeminiApiKey();
+  const model = getGeminiModel();
+  const batchSize = parseInt(document.getElementById('batchSize').value) || 10;
+  let completed = 0, failed = 0;
+
+  for (let i = 0; i < total; i += batchSize) {
+    if (abortController.signal.aborted) { log('🛑 ยกเลิก'); break; }
+
+    const batch = [];
+    for (let j = i; j < Math.min(i + batchSize, total); j++) {
+      let txt = currentEntries[j].text;
+      let tags = [];
+      if (keepFormat && (fileFormat === 'ass' || fileFormat === 'ssa')) {
+        const p = protectTags(txt); txt = p.text; tags = p.tags;
+      }
+      batch.push({ idx: j, text: txt, tags });
+    }
+
+    updateProgress(completed, total, `Batch ${Math.floor(i/batchSize)+1} / ${Math.ceil(total/batchSize)}`);
+
+    try {
+      const results = await translateBatchGemini(batch.map(b => ({ text: b.text })), sourceLang, targetLang, stylePrompt, apiKey, model);
+      results.forEach((res, bidx) => {
+        const item = batch[bidx];
+        let txt = res;
+        if (keepFormat && (fileFormat === 'ass' || fileFormat === 'ssa') && item.tags.length) {
+          txt = restoreTags(txt, item.tags);
+        }
+        translatedEntries[item.idx].text = txt;
+      });
+      completed += batch.length;
+      recordQuota(0, 0, 1); // record batch
+    } catch (err) {
+      log(`❌ Batch ${Math.floor(i/batchSize)+1} ล้มเหลว: ${err.message}`);
+      // Fallback: try smaller batches
+      if (batch.length > 1) {
+        log('🔄 ลองแบ่ง batch เล็กลง...');
+        for (const item of batch) {
+          if (abortController.signal.aborted) break;
+          try {
+            const results = await translateBatchGemini([{ text: item.text }], sourceLang, targetLang, stylePrompt, apiKey, model);
+            let txt = results[0];
+            if (keepFormat && (fileFormat === 'ass' || fileFormat === 'ssa') && item.tags.length) {
+              txt = restoreTags(txt, item.tags);
+            }
+            translatedEntries[item.idx].text = txt;
+            completed++;
+          } catch (e2) {
+            failed++;
+            log(`❌ รายการ ${item.idx+1} ล้มเหลว`);
+          }
+          await sleep(300);
+        }
+      } else {
+        failed += batch.length;
+      }
+    }
+
+    updateProgress(completed, total, `แปลแล้ว ${completed}/${total}`);
+    if (i % 20 === 0 || i + batchSize >= total) {
+      renderPreview(translatedPreview, translatedEntries.slice(0, Math.min(completed + 5, total)), true);
+    }
+    if (i + batchSize < total) await sleep(500);
+  }
+  return { completed, failed };
+}
+
+async function translateWithOther(provider, total, sourceLang, targetLang, keepFormat, completedRef, failedRef) {
+  const apiKey = document.getElementById('otherApiKey').value.trim();
+  const useBatch = provider === 'google' || provider === 'deepl';
+  const BATCH_SIZE = useBatch ? 50 : 1;
+  const DELAY = provider === 'mymemory' ? 1000 : (useBatch ? 100 : 300);
+  let completed = 0, failed = 0;
+
+  for (let i = 0; i < total; i += BATCH_SIZE) {
+    if (abortController.signal.aborted) break;
+
+    const batch = [];
+    for (let j = i; j < Math.min(i + BATCH_SIZE, total); j++) {
+      let txt = currentEntries[j].text;
+      let tags = [];
+      if (keepFormat && (fileFormat === 'ass' || fileFormat === 'ssa')) {
+        const p = protectTags(txt); txt = p.text; tags = p.tags;
+      }
+      batch.push({ idx: j, text: txt, tags });
+    }
+
+    try {
+      let results = [];
+      if (useBatch && provider === 'google') {
+        results = await translateBatchGoogle(batch.map(b => b.text), sourceLang, targetLang, apiKey);
+      } else if (useBatch && provider === 'deepl') {
+        results = await translateBatchDeepL(batch.map(b => b.text), sourceLang, targetLang, apiKey);
+      } else {
+        results = await Promise.all(batch.map(b => translateTextGeneric(b.text, provider, sourceLang, targetLang, apiKey)));
+      }
+      results.forEach((res, bidx) => {
+        const item = batch[bidx];
+        let txt = res;
+        if (keepFormat && (fileFormat === 'ass' || fileFormat === 'ssa') && item.tags.length) {
+          txt = restoreTags(txt, item.tags);
+        }
+        translatedEntries[item.idx].text = txt;
+      });
+      completed += batch.length;
+    } catch (err) {
+      log(`❌ ช่วง ${i+1}-${Math.min(i+BATCH_SIZE,total)} ล้มเหลว: ${err.message}`);
+      failed += batch.length;
+      if (useBatch && batch.length > 1) {
+        log('🔄 Fallback แบบรายการ...');
+        for (const item of batch) {
+          if (abortController.signal.aborted) break;
+          try {
+            let txt = await translateTextGeneric(item.text, provider, sourceLang, targetLang, apiKey);
+            if (keepFormat && (fileFormat === 'ass' || fileFormat === 'ssa') && item.tags.length) {
+              txt = restoreTags(txt, item.tags);
+            }
+            translatedEntries[item.idx].text = txt;
+            completed++; failed--;
+          } catch (e2) {}
+          await sleep(200);
+        }
+      }
+    }
+
+    updateProgress(completed, total, `แปลแล้ว ${completed}/${total}${failed>0?` (ล้มเหลว ${failed})`:''}`);
+    if (i % 20 === 0 || i + BATCH_SIZE >= total) {
+      renderPreview(translatedPreview, translatedEntries.slice(0, Math.min(completed + 5, total)), true);
+    }
+    if (i + BATCH_SIZE < total) await sleep(DELAY);
+  }
+  return { completed, failed };
+}
+
+async function translateBatchGoogle(texts, source, target, apiKey) {
+  const url = `https://translation.googleapis.com/language/translate/v2?key=${apiKey}`;
+  const body = { q: texts, target: target, format: 'text' };
+  if (source !== 'auto') body.source = source;
+  const res = await fetch(url, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body), signal: abortController?.signal
+  });
+  if (!res.ok) throw new Error('Google Batch Error');
+  const data = await res.json();
+  return data.data.translations.map(t => t.translatedText);
+}
+
+async function translateBatchDeepL(texts, source, target, apiKey) {
+  const isFree = apiKey.endsWith(':fx');
+  const url = isFree ? 'https://api-free.deepl.com/v2/translate' : 'https://api.deepl.com/v2/translate';
+  const params = new URLSearchParams();
+  texts.forEach(t => params.append('text', t));
+  params.append('target_lang', target.toUpperCase() === 'TH' ? 'TH' : target.toUpperCase());
+  if (source !== 'auto') params.append('source_lang', source.toUpperCase());
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Authorization': `DeepL-Auth-Key ${apiKey}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params, signal: abortController?.signal
+  });
+  if (!res.ok) throw new Error('DeepL Batch Error');
+  const data = await res.json();
+  return data.translations.map(t => t.text);
+}
+
+function updateProgress(done, total, detail) {
+  const pct = Math.round((done / total) * 100);
+  progressBar.style.width = pct + '%';
+  progressPercent.textContent = pct + '%';
+  progressText.textContent = detail || `แปลแล้ว ${done}/${total}`;
+  progressDetail.textContent = `เวลา: ${((Date.now() - startTime)/1000).toFixed(1)}s | แปลแล้ว: ${done} | เหลือ: ${total - done}`;
+  document.getElementById('statDone').textContent = done;
+}
+
+function finishTranslation(completed, failed, total) {
+  isTranslating = false;
+  translateBtn.disabled = false;
+  translateBtn.innerHTML = '<i class="fas fa-language"></i><span>เริ่มแปล</span>';
+  exportBtn.disabled = false;
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+  document.getElementById('statTime').textContent = elapsed + 's';
+  statsBar.classList.remove('hidden');
+  editorPanel.classList.remove('hidden');
+
+  if (selectedProvider !== 'gemini' && translatedEntries.length > 0) {
+    styleAdjustBtn.classList.remove('hidden');
+  }
+
+  if (failed === 0) {
+    progressText.textContent = '✅ แปลเสร็จสมบูรณ์!';
+    log('✅ แปลเสร็จสมบูรณ์');
+    showToast('แปลเสร็จสมบูรณ์!', 'success');
+  } else {
+    progressText.textContent = `⚠️ แปลเสร็จแล้ว (ล้มเหลว ${failed} รายการ)`;
+    log(`⚠️ ล้มเหลว ${failed} รายการ`);
+    showToast(`แปลเสร็จแล้ว แต่ล้มเหลว ${failed} รายการ`, 'warning');
+  }
+
+  renderPreview(translatedPreview, translatedEntries, true);
+  renderSideBySide(currentEntries, translatedEntries);
+  translatedCount.textContent = `${translatedEntries.length} บรรทัด`;
+  translatedCount.classList.remove('hidden');
+  if (selectedProvider === 'gemini') {
+    styleBadge.classList.remove('hidden');
+    styleBadge.innerHTML = '<i class="fas fa-sparkles"></i> Styled by Gemini';
+  }
+}
+
+function cancelTranslation() {
+  if (abortController) { abortController.abort(); isTranslating = false; }
+  translateBtn.disabled = false;
+  translateBtn.innerHTML = '<i class="fas fa-language"></i><span>เริ่มแปล</span>';
+}
+
+// ==================== STYLE ADJUSTMENT (POST-TRANSLATION) ====================
+async function startStyleAdjust() {
+  if (!translatedEntries.length || isTranslating) return;
+  const apiKey = getGeminiApiKey();
+  const model = getGeminiModel();
+  const targetLang = document.getElementById('targetLang').value;
+  const stylePrompt = getStylePrompt();
+  const keepFormat = document.getElementById('keepFormat').checked;
+  const batchSize = parseInt(document.getElementById('batchSize').value) || 10;
+  const total = translatedEntries.length;
+
+  isTranslating = true;
+  abortController = new AbortController();
+  styleAdjustBtn.disabled = true;
+  styleAdjustBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังปรับสไตล์...';
+  progressSection.classList.remove('hidden');
+  startTime = Date.now();
+  log('✨ เริ่มปรับสไตล์ด้วย Gemini...');
+
+  let completed = 0, failed = 0;
+
+  for (let i = 0; i < total; i += batchSize) {
+    if (abortController.signal.aborted) break;
+
+    const batch = [];
+    for (let j = i; j < Math.min(i + batchSize, total); j++) {
+      let txt = translatedEntries[j].text;
+      let tags = [];
+      if (keepFormat && (fileFormat === 'ass' || fileFormat === 'ssa')) {
+        const p = protectTags(txt); txt = p.text; tags = p.tags;
+      }
+      batch.push({ idx: j, text: txt, tags });
+    }
+
+    updateProgress(completed, total, `ปรับสไตล์ Batch ${Math.floor(i/batchSize)+1} / ${Math.ceil(total/batchSize)}`);
+
+    try {
+      const results = await styleAdjustBatchGemini(batch.map(b => ({ text: b.text })), targetLang, stylePrompt, apiKey, model);
+      results.forEach((res, bidx) => {
+        const item = batch[bidx];
+        let txt = res;
+        if (keepFormat && (fileFormat === 'ass' || fileFormat === 'ssa') && item.tags.length) {
+          txt = restoreTags(txt, item.tags);
+        }
+        translatedEntries[item.idx].text = txt;
+      });
+      completed += batch.length;
+      recordQuota(0, 0, 1);
+    } catch (err) {
+      log(`❌ Style Batch ${Math.floor(i/batchSize)+1} ล้มเหลว: ${err.message}`);
+      failed += batch.length;
+    }
+
+    if (i % 20 === 0 || i + batchSize >= total) {
+      renderPreview(translatedPreview, translatedEntries.slice(0, Math.min(completed + 5, total)), true);
+    }
+    if (i + batchSize < total) await sleep(500);
+  }
+
+  isTranslating = false;
+  styleAdjustBtn.disabled = false;
+  styleAdjustBtn.innerHTML = '<i class="fas fa-sparkles"></i><span>✨ ปรับแต่งให้ลื่นไหลด้วย Gemini</span>';
+
+  if (failed === 0) {
+    progressText.textContent = '✅ ปรับสไตล์เสร็จสมบูรณ์!';
+    log('✅ ปรับสไตล์เสร็จสมบูรณ์');
+    showToast('ปรับสไตล์เสร็จสมบูรณ์!', 'success');
+  } else {
+    progressText.textContent = `⚠️ ปรับสไตล์เสร็จแล้ว (ล้มเหลว ${failed})`;
+    showToast(`ปรับสไตล์เสร็จแล้ว แต่ล้มเหลว ${failed} รายการ`, 'warning');
+  }
+
+  renderPreview(translatedPreview, translatedEntries, true);
+  renderSideBySide(currentEntries, translatedEntries);
+  styleBadge.classList.remove('hidden');
+  styleBadge.innerHTML = '<i class="fas fa-sparkles"></i> Styled by Gemini';
+}
+
+// ==================== QUOTA TRACKING ====================
+function loadQuota() {
+  const today = new Date().toISOString().slice(0, 10);
+  const saved = localStorage.getItem('gemini_quota');
+  if (saved) {
+    const data = JSON.parse(saved);
+    if (data.date === today) return data;
+  }
+  return { date: today, requests: 0, tokens: 0, batches: 0 };
+}
+
+function saveQuota() {
+  localStorage.setItem('gemini_quota', JSON.stringify(quotaData));
+}
+
+function recordQuota(requests, tokens, batches) {
+  quotaData.requests += requests;
+  quotaData.tokens += tokens;
+  quotaData.batches += batches;
+  saveQuota();
+  updateQuotaUI();
+}
+
+function updateQuotaUI() {
+  document.getElementById('quotaRequests').textContent = quotaData.requests;
+  document.getElementById('quotaTokens').textContent = quotaData.tokens.toLocaleString();
+  document.getElementById('quotaBatches').textContent = quotaData.batches;
+
+  // Calculate saved percentage
+  const totalSubs = currentEntries.length || 1;
+  const saved = totalSubs > 0 ? Math.round((1 - (quotaData.batches / totalSubs)) * 100) : 0;
+  document.getElementById('quotaSaved').textContent = saved + '%';
+
+  // Bar
+  const limit = parseInt(document.getElementById('dailyLimit').value) || 1500;
+  const pct = Math.min((quotaData.requests / limit) * 100, 100);
+  document.getElementById('quotaBar').style.width = pct + '%';
+  document.getElementById('quotaRemaining').textContent = Math.max(0, limit - quotaData.requests);
+}
+
+function resetQuota() {
+  quotaData = { date: new Date().toISOString().slice(0, 10), requests: 0, tokens: 0, batches: 0 };
+  saveQuota();
+  updateQuotaUI();
+  showToast('รีเซ็ต Quota สำเร็จ', 'success');
+}
+
+document.getElementById('dailyLimit').addEventListener('change', updateQuotaUI);
+
+// ==================== DOWNLOAD ====================
+function downloadFile() {
+  if (!translatedEntries.length) return;
+  let content = '';
+  if (fileFormat === 'srt') content = buildSRT(translatedEntries);
+  else if (fileFormat === 'vtt') content = buildVTT(translatedEntries);
+  else if (fileFormat === 'ass' || fileFormat === 'ssa') content = buildASS(translatedEntries);
+
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const baseName = currentFile.name.replace(/\.[^/.]+$/, '');
+  const target = document.getElementById('targetLang').value;
+  a.href = url;
+  a.download = `${baseName}_${target}.${fileFormat}`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  log(`💾 ดาวน์โหลด: ${a.download}`);
+  showToast(`ดาวน์โหลด ${a.download} สำเร็จ`, 'success');
+}
+
+function buildSRT(entries) {
+  return entries.map(e => `${e.index}\n${e.start} --> ${e.end}\n${e.text}`).join('\n\n') + '\n';
+}
+function buildVTT(entries) {
+  return 'WEBVTT\n\n' + entries.map(e => `${e.start} --> ${e.end}\n${e.text}`).join('\n\n') + '\n';
+}
+function buildASS(entries) {
+  if (!entries.length) return '';
+  const first = currentEntries[0];
+  const formatCols = first.formatCols || ['Layer','Start','End','Style','Name','MarginL','MarginR','MarginV','Effect','Text'];
+  const lines = ['[Events]', `Format: ${formatCols.join(', ')}`];
+  entries.forEach(e => {
+    if (e.raw && e.parts) {
+      const newParts = [...e.parts];
+      newParts[formatCols.length - 1] = e.text.replace(/\n/g, '\\N');
+      lines.push(`Dialogue: ${newParts.join(',')}`);
+    } else {
+      lines.push(`Dialogue: 0,${e.start},${e.end},Default,,0,0,0,,${e.text.replace(/\n/g, '\\N')}`);
+    }
+  });
+  return lines.join('\n') + '\n';
+}
+
+// ==================== UTILS ====================
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function log(msg) {
+  const time = new Date().toLocaleTimeString('th-TH');
+  const line = document.createElement('div');
+  line.textContent = `[${time}] ${msg}`;
+  logContent.appendChild(line);
+  logContent.scrollTop = logContent.scrollHeight;
+}
+
+function clearLog() { logContent.innerHTML = ''; }
+
+function showToast(message, type = 'info') {
+  const colors = { success: 'bg-green-500', error: 'bg-red-500', warning: 'bg-amber-500', info: 'bg-blue-500' };
+  const icons = { success: 'fa-check-circle', error: 'fa-times-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' };
+  const toast = document.createElement('div');
+  toast.className = `toast ${colors[type]} text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 min-w-[280px]`;
+  toast.innerHTML = `<i class="fas ${icons[type]}"></i><span class="text-sm font-medium">${message}</span>`;
+  document.getElementById('toastContainer').appendChild(toast);
+  setTimeout(() => toast.remove(), 5000);
+}
+</script>
+</body>
+</html>
