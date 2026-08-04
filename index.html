@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Subtitle Translator Pro v2.0.4 — Gemini Batch & Style Studio</title>
+<title>AI Subtitle Translator Pro v2.0.5 — Gemini Batch & Style Studio</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -44,7 +44,7 @@ body{font-family:'Noto Sans Thai','Inter',sans-serif;}
 <base target="_blank">
 </head>
 <body class="bg-gradient-to-br from-slate-100 via-violet-50 to-fuchsia-100 min-h-screen">
-<!-- AI Subtitle Translator Pro v2.0.4 | Codename: "Gemini Batch & Style Studio" -->
+<!-- AI Subtitle Translator Pro v2.0.5 | Codename: "Gemini Batch & Style Studio" -->
 
 <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
@@ -57,7 +57,7 @@ body{font-family:'Noto Sans Thai','Inter',sans-serif;}
   </div>
   <h1 class="text-3xl md:text-4xl font-bold text-slate-800 mb-1">AI Subtitle Translator Pro</h1>
   <div class="flex justify-center items-center gap-2 mb-2">
-    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-slate-800 text-white">v2.0.4</span>
+    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-slate-800 text-white">v2.0.5</span>
     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-violet-100 text-violet-700">"Gemini Batch & Style Studio"</span>
   </div>
   <p class="text-slate-500">แปลซับไตเติ้ลอัจฉริยะด้วย Gemini AI พร้อมปรับแต่ง Style ให้ลื่นไหล</p>
@@ -410,7 +410,7 @@ body{font-family:'Noto Sans Thai','Inter',sans-serif;}
 </div>
 
 <footer class="text-center mt-8 pb-6 text-slate-400 text-sm">
-  <p>⚡ AI Subtitle Translator Pro v2.0.4 "Gemini Batch & Style Studio" • รองรับ SRT, VTT, ASS/SSA • Batch Translation • Style Studio</p>
+  <p>⚡ AI Subtitle Translator Pro v2.0.5 "Gemini Batch & Style Studio" • รองรับ SRT, VTT, ASS/SSA • Batch Translation • Style Studio</p>
 </footer>
 </div>
 
@@ -1460,20 +1460,28 @@ function recordQuota(requests, tokens, batches) {
 }
 
 function updateQuotaUI() {
-  document.getElementById('quotaRequests').textContent = quotaData.requests;
-  document.getElementById('quotaTokens').textContent = quotaData.tokens.toLocaleString();
-  document.getElementById('quotaBatches').textContent = quotaData.batches;
+  const qReq = document.getElementById('quotaRequests');
+  const qTok = document.getElementById('quotaTokens');
+  const qBat = document.getElementById('quotaBatches');
+  const qSaved = document.getElementById('quotaSaved');
+  const qBar = document.getElementById('quotaBar');
+  const qRemaining = document.getElementById('quotaRemaining');
+
+  if (qReq) qReq.textContent = quotaData.requests;
+  if (qTok) qTok.textContent = quotaData.tokens.toLocaleString();
+  if (qBat) qBat.textContent = quotaData.batches;
 
   // Calculate saved percentage
   const totalSubs = currentEntries.length || 1;
   const saved = totalSubs > 0 ? Math.round((1 - (quotaData.batches / totalSubs)) * 100) : 0;
-  document.getElementById('quotaSaved').textContent = saved + '%';
+  if (qSaved) qSaved.textContent = saved + '%';
 
   // Bar
-  const limit = parseInt(document.getElementById('dailyLimit').value) || 1500;
+  const limitEl = document.getElementById('dailyLimit');
+  const limit = limitEl ? (parseInt(limitEl.value) || 1500) : 1500;
   const pct = Math.min((quotaData.requests / limit) * 100, 100);
-  document.getElementById('quotaBar').style.width = pct + '%';
-  document.getElementById('quotaRemaining').textContent = Math.max(0, limit - quotaData.requests);
+  if (qBar) qBar.style.width = pct + '%';
+  if (qRemaining) qRemaining.textContent = Math.max(0, limit - quotaData.requests);
 }
 
 function resetQuota() {
